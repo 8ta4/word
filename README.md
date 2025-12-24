@@ -10,7 +10,7 @@
 
 > How do I set up `word`?
 
-1. Make sure you're using [`lazy.nvim`]().
+1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
 
 1. Add the following block to your `lazy.nvim` configuration:
 
