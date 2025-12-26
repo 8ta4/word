@@ -10,9 +10,26 @@
 
 > How do I set up `word`?
 
+1. Make sure you're using a Mac.
+
+1. Make sure you're using [Alacritty]().
+
 1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
 
 1. Open a terminal.
+
+1. Add the following block to your `alacritty.toml`:
+
+   ```toml
+   [keyboard]
+   bindings = [
+     { chars = "\u001bd", key = "D", mods = "Command" },
+     { chars = "\u001bf", key = "F", mods = "Command" },
+     { chars = "\u001bj", key = "J", mods = "Command" },
+     { chars = "\u001bk", key = "K", mods = "Command" },
+     { chars = "\u001bs", key = "S", mods = "Command" },
+   ]
+   ```
 
 1. Add the following block to your `lazy.nvim` configuration:
 
