@@ -12,6 +12,8 @@
 
 1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
 
+1. Open a terminal.
+
 1. Add the following block to your `lazy.nvim` configuration:
 
    ```lua
@@ -25,4 +27,16 @@
        { "<M-s>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
      },
    }
+   ```
+
+1. Run this command:
+   ```bash
+   mkdir -p ~/.config/word/
+   ```
+
+1. Copy an API key from the Groq website.
+
+1. Run this command:
+   ```bash
+   pbpaste > ~/.config/word/groq
    ```
