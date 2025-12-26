@@ -12,7 +12,7 @@
 
 1. Make sure you're using a Mac.
 
-1. Make sure you're using [Alacritty]().
+1. Make sure you're using [Alacritty](https://github.com/alacritty/alacritty).
 
 1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
 
