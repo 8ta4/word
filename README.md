@@ -18,7 +18,7 @@
 
 1. Open a terminal.
 
-1. Add the following block to your `alacritty.toml`:
+1. Merge these bindings into your Alacritty configuration:
 
    ```toml
    [keyboard]
