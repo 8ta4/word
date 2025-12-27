@@ -57,3 +57,35 @@
    ```bash
    pbpaste > ~/.config/word/groq
    ```
+
+## Usage
+
+
+> How do I get suggestions?
+
+
+Press `⌘ + s`. Think suggest.
+
+
+> How do I apply the first suggestion?
+
+
+Press `⌘ + k`. Vim uses k for up.
+
+
+> How do I apply the second suggestion?
+
+
+Press `⌘ + j`. Vim uses j for down.
+
+
+> How do I mark a sentence as reviewed?
+
+
+Press `⌘ + d`. Think done.
+
+
+> How do I remove the reviewed status?
+
+
+Press `⌘ + f`. Think forget.
