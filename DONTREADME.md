@@ -32,4 +32,4 @@ The goal is under $1 a month. That's over 10x cheaper than Grammarly Pro.
 
 > Does `word` use built-in Neovim sentence text objects?
 
-No. `word` uses `vim-textobj-sentence` to prevent abbreviations from being treated as sentence boundaries.
+No. `word` uses [`vim-textobj-sentence`](https://github.com/preservim/vim-textobj-sentence) to prevent abbreviations from being treated as sentence boundaries.
