@@ -8,12 +8,6 @@
 
 No. The tool is designed to assist without ever getting in your way.
 
-### Tracking
-
-> Can I see my review progress after closing and reopening a file?
-
-Yes. It's designed to save your progress, so an accidental file close doesn't mean you have to start over.
-
 ### Latency
 
 > What's the latency goal for getting suggestions?

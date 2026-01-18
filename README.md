@@ -23,11 +23,9 @@
    ```toml
    [keyboard]
    bindings = [
-     { chars = "\u001bd", key = "D", mods = "Command" },
      { chars = "\u001bf", key = "F", mods = "Command" },
      { chars = "\u001bj", key = "J", mods = "Command" },
      { chars = "\u001bk", key = "K", mods = "Command" },
-     { chars = "\u001bs", key = "S", mods = "Command" },
    ]
    ```
 
@@ -37,11 +35,9 @@
    {
      "8ta4/word",
      keys = {
-       { "<M-d>", function() require('word').confirm() end, mode = {"n", "i", "v"} },
-       { "<M-f>", function() require('word').clear() end, mode = {"n", "i", "v"} },
+       { "<M-f>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
        { "<M-j>", function() require('word').apply(2) end, mode = {"n", "i", "v"} },
        { "<M-k>", function() require('word').apply(1) end, mode = {"n", "i", "v"} },
-       { "<M-s>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
      },
      opts = {
        styles = {
@@ -67,7 +63,7 @@
 
 > How do I get suggestions?
 
-Press `⌘ + s`. Think suggest.
+Press `⌘ + f`. Think fix.
 
 > How do I apply the first suggestion?
 
@@ -76,14 +72,6 @@ Press `⌘ + k`. Vim uses k for up.
 > How do I apply the second suggestion?
 
 Press `⌘ + j`. Vim uses j for down.
-
-> How do I mark a sentence as reviewed?
-
-Press `⌘ + d`. Think done.
-
-> How do I remove the reviewed status?
-
-Press `⌘ + f`. Think forget.
 
 > Can I add more styles?
 
@@ -96,11 +84,9 @@ Yes.
    bindings = [
      { chars = "\u001b1", key = "Key1", mods = "Command" },
      { chars = "\u001b2", key = "Key2", mods = "Command" },
-     { chars = "\u001bd", key = "D", mods = "Command" },
      { chars = "\u001bf", key = "F", mods = "Command" },
      { chars = "\u001bj", key = "J", mods = "Command" },
      { chars = "\u001bk", key = "K", mods = "Command" },
-     { chars = "\u001bs", key = "S", mods = "Command" },
    ]
    ```
 
@@ -114,11 +100,9 @@ Yes.
      keys = {
        { "<M-1>", function() require('word').style(1) end, mode = {"n", "i", "v"} },
        { "<M-2>", function() require('word').style(2) end, mode = {"n", "i", "v"} },
-       { "<M-d>", function() require('word').confirm() end, mode = {"n", "i", "v"} },
-       { "<M-f>", function() require('word').clear() end, mode = {"n", "i", "v"} },
+       { "<M-f>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
        { "<M-j>", function() require('word').apply(2) end, mode = {"n", "i", "v"} },
        { "<M-k>", function() require('word').apply(1) end, mode = {"n", "i", "v"} },
-       { "<M-s>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
      },
      opts = {
        styles = {
