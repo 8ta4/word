@@ -20,7 +20,7 @@ The goal is under 1.0 second.
 
 > What's the monthly cost goal?
 
-The goal is under $1 a month. That's over 10x cheaper than Grammarly Pro.
+The goal is under $1 a month. That's over 10x cheaper than [Grammarly Pro](https://www.grammarly.com/plans#:~:text=%2412,USD).
 
 ## Segmentation
 
