@@ -22,12 +22,6 @@ The goal is under 1.0 second.
 
 The goal is under $1 a month. That's over 10x cheaper than [Grammarly Pro](https://www.grammarly.com/plans#:~:text=%2412,USD).
 
-## Segmentation
-
-> Does `word` use built-in Neovim sentence text objects?
-
-No. `word` uses [`vim-textobj-sentence`](https://github.com/preservim/vim-textobj-sentence) to prevent abbreviations from being treated as sentence boundaries.
-
 ## Caching
 
 > Does `word` cache the suggestions it generates?
