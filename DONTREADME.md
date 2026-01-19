@@ -27,3 +27,23 @@ The goal is under $1 a month. That's over 10x cheaper than [Grammarly Pro](https
 > Does `word` use built-in Neovim sentence text objects?
 
 No. `word` uses [`vim-textobj-sentence`](https://github.com/preservim/vim-textobj-sentence) to prevent abbreviations from being treated as sentence boundaries.
+
+## Caching
+
+> Does `word` cache the suggestions it generates?
+
+Yes. The cache holds the two most recent suggestions for each sentence.
+
+> Will suggestions for one sentence overwrite those for an identical sentence elsewhere?
+
+No. `word` does not use the sentence's text as a cache key. Instead, it uses a Neovim extmark to pin suggestions to that specific instance of the sentence.
+
+> Will I see my previous suggestions if I reopen a file?
+
+No. The cache lives and dies with your editing session. Persistent caching would be unreliable if you:
+
+-   Edited the file outside of Neovim.
+
+-   Moved the file.
+
+-   Recovered from a swap file.
