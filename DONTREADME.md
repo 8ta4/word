@@ -42,8 +42,8 @@ No. `word` does not use the sentence's text as a cache key. Instead, it uses a N
 
 No. The cache lives and dies with your editing session. Persistent caching would be unreliable if you:
 
--   Edited the file outside of Neovim.
+- Edited the file outside of Neovim.
 
--   Moved the file.
+- Moved the file.
 
--   Recovered from a swap file.
+- Recovered from a swap file.
