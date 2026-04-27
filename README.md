@@ -73,6 +73,10 @@ Press `⌘ + k`. Vim uses k for up.
 
 Press `⌘ + j`. Vim uses j for down.
 
+> Can I generate suggestions for multiple sentences at once?
+
+Yes. Select the text in Visual mode and press `⌘ + f`. You don't even have to select the whole sentence. As long as your selection touches part of a sentence, `word` rewrites the entire sentence.
+
 > Can I add more styles?
 
 Yes.
