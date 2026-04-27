@@ -34,6 +34,10 @@ Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin tar
 
 Yes. If an asynchronous request from a command like `⌘ + f` finishes while you're typing, the HUD will update with those fresh suggestions. But the display stays anchored to the specific `extmark` you were on when you entered Insert mode. This lets you use the suggestions as a reference while you're editing the sentence. The HUD won't switch its focus to a different `extmark` just because you moved your cursor in Insert mode.
 
+> Can the HUD show suggestions for a sentence my cursor isn't inside?
+
+Yes. The HUD shows suggestions for whichever sentence `⌘ + f` would target if you triggered it now. To make this happen, the plugin defines an active range where those suggestions stay visible. If there's a previous sentence, this range starts at the character right after it ends. If there isn't a previous sentence, the range starts at the beginning of the file. In either case, it extends to the end of the targeted sentence. This range will get recalculated when the text it covers is edited.
+
 ## Caching
 
 > Does `word` cache the suggestions it generates?
