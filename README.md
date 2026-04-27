@@ -61,15 +61,15 @@
 
 ## Usage
 
-> How do I get suggestions?
+> How do I get suggestions from Normal mode?
 
 Press `⌘ + f`. Think fix.
 
-> How do I apply the first suggestion?
+> How do I apply the first suggestion from Normal mode?
 
 Press `⌘ + k`. Vim uses k for up.
 
-> How do I apply the second suggestion?
+> How do I apply the second suggestion from Normal mode?
 
 Press `⌘ + j`. Vim uses j for down.
 
