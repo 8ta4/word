@@ -34,6 +34,10 @@
    ```lua
    {
      "8ta4/word",
+     dependencies = {
+       "8ta4/sentence",
+       build = "./install.sh",
+     },
      keys = {
        { "<M-f>", function() require('word').suggest() end, mode = {"n", "i", "v"} },
        { "<M-j>", function() require('word').apply(2) end, mode = {"n", "i", "v"} },
@@ -101,6 +105,10 @@ Yes.
 
    {
      "8ta4/word",
+     dependencies = {
+       "8ta4/sentence",
+       build = "./install.sh",
+     },
      keys = {
        { "<M-1>", function() require('word').style(1) end, mode = {"n", "i", "v"} },
        { "<M-2>", function() require('word').style(2) end, mode = {"n", "i", "v"} },
