@@ -36,6 +36,7 @@
    ```lua
    {
      "8ta4/word",
+     build = "./install.sh",
      dependencies = {
        "8ta4/sentence",
        build = "./install.sh",
@@ -111,6 +112,7 @@ Yes.
 
    {
      "8ta4/word",
+     build = "./install.sh",
      dependencies = {
        "8ta4/sentence",
        build = "./install.sh",
