@@ -12,6 +12,8 @@
 
 1. Make sure you're using a Mac.
 
+1. Install [Homebrew](https://brew.sh/#install).
+
 1. Make sure you're using [Alacritty](https://github.com/alacritty/alacritty).
 
 1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
@@ -51,8 +53,12 @@
    }
    ```
 
-1. Run this command:
+1. Run the following commands:
+
    ```bash
+   brew install node
+   npm install -g neovim
+   nvim --headless +UpdateRemotePlugins +qa!
    mkdir -p ~/.config/word/
    ```
 
