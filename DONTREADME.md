@@ -2,7 +2,7 @@
 
 ## Goals
 
-### Heads-Up Display
+### Compatibility
 
 > Does this tool override default Vim keybindings?
 
