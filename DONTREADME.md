@@ -26,7 +26,8 @@ The goal is under $1 a month. That's over 10x cheaper than [Grammarly Pro](https
 
 > Can `⌘ + f` generate suggestions if your cursor is not inside a sentence?
 
-Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions a low-friction action.
+Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions faster. But you might accidentally target the wrong sentence. It's a blessing and a cursor.
+
 
 ## Heads-Up Display (HUD)
 
