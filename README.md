@@ -63,11 +63,11 @@
    mkdir -p ~/.config/word/
    ```
 
-1. Copy an API key from the Groq website.
+1. Copy an API key from [the Cerebras website](https://cloud.cerebras.ai).
 
 1. Run this command:
    ```bash
-   pbpaste > ~/.config/word/groq
+   pbpaste > ~/.config/word/cerebras
    ```
 
 ## Usage
