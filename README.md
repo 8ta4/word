@@ -54,20 +54,16 @@
    }
    ```
 
+1. Copy an API key from [the Cerebras website](https://cloud.cerebras.ai).
+
 1. Run the following commands:
 
    ```bash
+   mkdir -p ~/.config/word/
+   pbpaste > ~/.config/word/cerebras
    brew install node
    npm install -g neovim
    nvim --headless +UpdateRemotePlugins +qa!
-   mkdir -p ~/.config/word/
-   ```
-
-1. Copy an API key from [the Cerebras website](https://cloud.cerebras.ai).
-
-1. Run this command:
-   ```bash
-   pbpaste > ~/.config/word/cerebras
    ```
 
 ## Usage
