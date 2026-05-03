@@ -1,3 +1,6 @@
+# clj-kondo
+.clj-kondo
+
 # Devenv
 .devenv*
 devenv.local.nix
@@ -6,13 +9,11 @@ devenv.local.yaml
 # direnv
 .direnv
 
+# language server protocol
+.lsp
+
 # pre-commit
 .pre-commit-config.yaml
-
-# word
-.clj-kondo
-.lsp
-rplugin
 
 # shadow-cljs
 node_modules/
@@ -35,3 +36,6 @@ pom.xml.asc
 
 .hgignore
 .hg/
+
+# word
+rplugin
