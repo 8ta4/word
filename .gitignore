@@ -9,6 +9,10 @@ devenv.local.yaml
 # pre-commit
 .pre-commit-config.yaml
 
+# word
+.clj-kondo
+.lsp
+
 # shadow-cljs
 node_modules/
 public/js
