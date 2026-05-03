@@ -10,7 +10,10 @@
   # https://devenv.sh/packages/
   packages = [
     pkgs.git
+    pkgs.gitleaks
     pkgs.nil
+    pkgs.pre-commit
+    pkgs.python313Packages.pre-commit-hooks
   ];
 
   # https://devenv.sh/languages/
@@ -47,6 +50,23 @@
 
   # https://devenv.sh/git-hooks/
   # git-hooks.hooks.shellcheck.enable = true;
+  git-hooks.hooks = {
+    gitleaks = {
+      enable = true;
+      # https://github.com/gitleaks/gitleaks/blob/8863af47d64c3681422523e36837957c74d4af4b/.pre-commit-hooks.yaml#L4
+      # Direct execution of gitleaks here results in '[git] fatal: cannot change to 'devenv.nix': Not a directory'.
+      entry = "bash -c 'exec gitleaks git --redact --staged --verbose'";
+    };
+    # https://github.com/NixOS/nixfmt/blob/f723c1c1aaa91908d2fa66f0432fd2c5db9c21a1/README.md?plain=1#L169
+    nixfmt.enable = true;
+    prettier.enable = true;
+    trailing-whitespace = {
+      enable = true;
+      # https://github.com/pre-commit/pre-commit-hooks/blob/5c514f85cc9be49324a6e3664e891ac2fc8a8609/.pre-commit-hooks.yaml#L205-L212
+      entry = "trailing-whitespace-fixer";
+      types = [ "text" ];
+    };
+  };
 
   # See full reference at https://devenv.sh/reference/options/
 }
