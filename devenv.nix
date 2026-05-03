@@ -39,8 +39,9 @@
   enterShell = ''
     hello         # Run scripts directly
     git --version # Use packages
-    export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
+    brew bundle
     npm i
+    export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
     sed "s|{{dir}}|$DEVENV_ROOT|g" template.lua > "$HOME"/.config/nvim/lua/plugins/word.lua
   '';
 
