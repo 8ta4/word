@@ -18,13 +18,7 @@
 
   # https://devenv.sh/languages/
   # languages.rust.enable = true;
-  languages = {
-    clojure.enable = true;
-    javascript = {
-      enable = true;
-      npm.enable = true;
-    };
-  };
+  languages.clojure.enable = true;
 
   # https://devenv.sh/processes/
   # processes.dev.exec = "${lib.getExe pkgs.watchexec} -n -- ls -la";
