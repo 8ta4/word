@@ -30,6 +30,7 @@
   scripts.hello.exec = ''
     echo hello from $GREET
   '';
+  scripts.release.exec = "shadow-cljs release main";
   scripts.run.exec = ''
     nvim +"lua vim.fn.Style(1)"
   '';
@@ -38,6 +39,7 @@
   enterShell = ''
     hello         # Run scripts directly
     git --version # Use packages
+    export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
     npm i
     sed "s|{{dir}}|$DEVENV_ROOT|g" template.lua > "$HOME"/.config/nvim/lua/plugins/word.lua
   '';
