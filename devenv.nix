@@ -39,8 +39,9 @@
   enterShell = ''
     hello         # Run scripts directly
     git --version # Use packages
-    export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
+    brew bundle
     npm i
+    export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
     sed "s|{{dir}}|$DEVENV_ROOT|g" template.lua > "$HOME"/.config/nvim/lua/plugins/word.lua
   '';
 
@@ -66,9 +67,11 @@
       # Direct execution of gitleaks here results in '[git] fatal: cannot change to 'devenv.nix': Not a directory'.
       entry = "bash -c 'exec gitleaks git --redact --staged --verbose'";
     };
+    lua-ls.enable = true;
     # https://github.com/NixOS/nixfmt/blob/f723c1c1aaa91908d2fa66f0432fd2c5db9c21a1/README.md?plain=1#L169
     nixfmt.enable = true;
     prettier.enable = true;
+    stylua.enable = true;
     trailing-whitespace = {
       enable = true;
       # https://github.com/pre-commit/pre-commit-hooks/blob/5c514f85cc9be49324a6e3664e891ac2fc8a8609/.pre-commit-hooks.yaml#L205-L212
