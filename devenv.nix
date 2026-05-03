@@ -14,6 +14,7 @@
     pkgs.nil
     pkgs.pre-commit
     pkgs.python313Packages.pre-commit-hooks
+    pkgs.rubyPackages.solargraph
   ];
 
   # https://devenv.sh/languages/
