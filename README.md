@@ -78,11 +78,11 @@ Press `⌘ + f`. Think fix.
 
 > How do I apply the first suggestion from Normal mode?
 
-Press `⌘ + k`. Vim uses k for up.
+Press `⌘ + k`. Vim uses `k` for up.
 
 > How do I apply the second suggestion from Normal mode?
 
-Press `⌘ + j`. Vim uses j for down.
+Press `⌘ + j`. Vim uses `j` for down.
 
 > Can I generate suggestions for multiple sentences at once?
 
