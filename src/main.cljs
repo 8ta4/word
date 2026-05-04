@@ -16,6 +16,7 @@
   []
   (promesa/let [positions (promesa/all (map #(.nvim.callFunction @state "getpos" %) ["." "v"]))]
     (sort (map (comp vec
+                     (partial map dec)
                      drop-last
                      rest
                      js->clj)
