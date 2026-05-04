@@ -22,6 +22,25 @@
                      js->clj)
                positions))))
 
+(defn get-sentences
+  [start-pos end-pos]
+  (promesa/let [start-sentence (.nvim.callFunction @state "Get" (clj->js {:pos start-pos}))]
+    (if (js->clj start-sentence)
+      (promesa/let [end-sentence* (.nvim.callFunction @state "Get" (clj->js {:pos end-pos}))
+                    end-sentence (if (js->clj end-sentence*)
+                                   (js->clj end-sentence*)
+                                   (.nvim.callFunction @state "Get" (clj->js {:offset -1
+                                                                              :pos end-pos})))]
+        (if (= (js->clj start-sentence) (js->clj end-sentence))
+          [(js->clj start-sentence)]
+          (promesa/loop [sentences [(js->clj end-sentence)]]
+            (promesa/let [previous-sentence (.nvim.callFunction @state "Get" (clj->js {:offset -1
+                                                                                       :pos (drop-last (first sentences))}))]
+              (if (= (js->clj start-sentence) (js->clj previous-sentence))
+                (cons (js->clj start-sentence) sentences)
+                (promesa/recur (cons (js->clj previous-sentence) sentences)))))))
+      [])))
+
 (defn style
   [index])
 
