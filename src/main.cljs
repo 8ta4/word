@@ -77,9 +77,13 @@
   (promesa/let [sentences* (prepend sentences)]
     (all (map set-range-extmark (partition 2 1 sentences*)))))
 
+(defn suggest
+  [])
+
 (defn main
   [plugin]
   (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
     (reset! state {:nvim (.-nvim plugin)
                    :namespace namespace}))
-  (.registerFunction plugin "Style" style))
+  (.registerFunction plugin "Style" style)
+  (.registerFunction plugin "Suggest" suggest))
