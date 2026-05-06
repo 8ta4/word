@@ -1,5 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
+            [com.rpl.specter :refer [setval AFTER-ELEM]]
             [os :refer [homedir]]
             [path :refer [join]]
             [promesa.core :as promesa :refer [all]]))
@@ -76,6 +77,15 @@
   [sentences]
   (promesa/let [sentences* (prepend sentences)]
     (all (map set-range-extmark (partition 2 1 sentences*)))))
+
+(def llast
+  (comp last last))
+
+(defn append
+  [sentences]
+  (promesa/let [next-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset 1
+                                                                            :pos [(first (last sentences)) (llast sentences)]}))]
+    (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
 
 (defn suggest
   []
