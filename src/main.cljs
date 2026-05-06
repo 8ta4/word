@@ -2,7 +2,7 @@
   (:require [cljs-node-io.core :refer [slurp]]
             [os :refer [homedir]]
             [path :refer [join]]
-            [promesa.core :as promesa]))
+            [promesa.core :as promesa :refer [all]]))
 
 (def api-key
   (-> (homedir)
@@ -14,7 +14,7 @@
 
 (defn get-selection-bounds
   []
-  (promesa/let [positions (promesa/all (map #(.callFunction (:nvim @state) "getpos" %) ["." "v"]))]
+  (promesa/let [positions (all (map #(.callFunction (:nvim @state) "getpos" %) ["." "v"]))]
     (sort (map (comp vec
                      (partial map dec)
                      drop-last
