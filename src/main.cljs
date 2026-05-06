@@ -10,11 +10,11 @@
       slurp))
 
 (defonce state
-  (atom nil))
+  (atom {}))
 
 (defn get-selection-bounds
   []
-  (promesa/let [positions (promesa/all (map #(.callFunction @state "getpos" %) ["." "v"]))]
+  (promesa/let [positions (promesa/all (map #(.callFunction (:nvim @state) "getpos" %) ["." "v"]))]
     (sort (map (comp vec
                      (partial map dec)
                      drop-last
@@ -24,18 +24,18 @@
 
 (defn get-sentences
   [start-pos end-pos]
-  (promesa/let [start-sentence (.callFunction @state "Get" (clj->js {:pos start-pos}))]
+  (promesa/let [start-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos start-pos}))]
     (if (js->clj start-sentence)
-      (promesa/let [end-sentence* (.callFunction @state "Get" (clj->js {:pos end-pos}))
+      (promesa/let [end-sentence* (.callFunction (:nvim @state) "Get" (clj->js {:pos end-pos}))
                     end-sentence (if (js->clj end-sentence*)
                                    (js->clj end-sentence*)
-                                   (.callFunction @state "Get" (clj->js {:offset -1
-                                                                         :pos end-pos})))]
+                                   (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
+                                                                                 :pos end-pos})))]
         (if (= (js->clj start-sentence) (js->clj end-sentence))
           [(js->clj start-sentence)]
           (promesa/loop [sentences [(js->clj end-sentence)]]
-            (promesa/let [previous-sentence (.callFunction @state "Get" (clj->js {:offset -1
-                                                                                  :pos (drop-last (first sentences))}))]
+            (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
+                                                                                          :pos (drop-last (first sentences))}))]
               (if (= (js->clj start-sentence) (js->clj previous-sentence))
                 (cons (js->clj start-sentence) sentences)
                 (promesa/recur (cons (js->clj previous-sentence) sentences)))))))
@@ -46,5 +46,7 @@
 
 (defn main
   [plugin]
-  (reset! state (.-nvim plugin))
+  (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
+    (reset! state {:nvim (.-nvim plugin)
+                   :namespace namespace}))
   (.registerFunction plugin "Style" style))
