@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM setval]]
+            [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
             [os :refer [homedir]]
             [path :refer [join]]
             [promesa.core :as promesa :refer [all]]))
@@ -89,7 +89,8 @@
     (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
 
 (def create-context*
-  (comp (partial map (partial zipmap [:previous :target :next]))
+  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
+                           (partial zipmap [:previous :target :next])))
         (partial partition 3 1)))
 
 (defn create-context
