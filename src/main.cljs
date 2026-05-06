@@ -52,7 +52,8 @@
                                                             row
                                                             start-col
                                                             {:end_col end-col
-                                                             :end_row row}])))
+                                                             :end_row row
+                                                             :hl_group "DiagnosticUnderlineWarn"}])))
 
 (defn set-sentence-extmarks
   [sentences]
