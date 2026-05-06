@@ -44,6 +44,15 @@
 (defn style
   [index])
 
+(defn set-extmark
+  [[row start-col end-col]]
+  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
+                                                            (:namespace @state)
+                                                            row
+                                                            start-col
+                                                            {:end_col end-col
+                                                             :end_row row}])))
+
 (defn main
   [plugin]
   (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
