@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [setval AFTER-ELEM]]
+            [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
             [os :refer [homedir]]
             [path :refer [join]]
             [promesa.core :as promesa :refer [all]]))
@@ -52,7 +52,8 @@
                                                             row
                                                             start-col
                                                             {:end_col end-col
-                                                             :end_row row}])))
+                                                             :end_row row
+                                                             :hl_group "DiagnosticUnderlineWarn"}])))
 
 (defn set-sentence-extmarks
   [sentences]
@@ -65,13 +66,13 @@
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
 (defn set-range-extmark
-  [[previous-sentence current-sentence]]
+  [[previous-sentence target-sentence]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
                                                             (:namespace @state)
                                                             (first previous-sentence)
                                                             (last previous-sentence)
-                                                            {:end_col (last current-sentence)
-                                                             :end_row (first current-sentence)}])))
+                                                            {:end_col (last target-sentence)
+                                                             :end_row (first target-sentence)}])))
 
 (defn set-range-extmarks
   [sentences]
@@ -86,6 +87,21 @@
   (promesa/let [next-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset 1
                                                                             :pos [(first (last sentences)) (llast sentences)]}))]
     (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
+
+(def create-context*
+  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
+                           (partial zipmap [:previous :target :next])))
+        (partial partition 3 1)))
+
+(defn create-context
+  [sentences]
+  (promesa/let [sentences* (prepend sentences)
+                sentences* (append sentences*)
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences*)
+                                                                 :end (inc (first (last sentences*)))}))]
+    (create-context* (map (fn [[row start-col end-col]]
+                            (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
+                          sentences*))))
 
 (defn suggest
   []
