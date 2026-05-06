@@ -66,13 +66,13 @@
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
 (defn set-range-extmark
-  [[previous-sentence current-sentence]]
+  [[previous-sentence target-sentence]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
                                                             (:namespace @state)
                                                             (first previous-sentence)
                                                             (last previous-sentence)
-                                                            {:end_col (last current-sentence)
-                                                             :end_row (first current-sentence)}])))
+                                                            {:end_col (last target-sentence)
+                                                             :end_row (first target-sentence)}])))
 
 (defn set-range-extmarks
   [sentences]
