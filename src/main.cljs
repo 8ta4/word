@@ -90,9 +90,10 @@
 (defn suggest
   []
   (promesa/let [bounds (get-selection-bounds)
-                sentences (apply get-sentences bounds)
-                range-marks (set-range-extmarks sentences)
-                sentence-marks (set-sentence-extmarks sentences)]))
+                sentences (apply get-sentences bounds)]
+    (when-not (empty? sentences)
+      (promesa/let [range-marks (set-range-extmarks sentences)
+                    sentence-marks (set-sentence-extmarks sentences)]))))
 
 (defn main
   [plugin]
