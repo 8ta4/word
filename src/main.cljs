@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [setval AFTER-ELEM]]
+            [com.rpl.specter :refer [AFTER-ELEM setval]]
             [os :refer [homedir]]
             [path :refer [join]]
             [promesa.core :as promesa :refer [all]]))
@@ -87,6 +87,20 @@
   (promesa/let [next-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset 1
                                                                             :pos [(first (last sentences)) (llast sentences)]}))]
     (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
+
+(def create-context*
+  (comp (partial map (partial zipmap [:previous :target :next]))
+        (partial partition 3 1)))
+
+(defn create-context
+  [sentences]
+  (promesa/let [sentences* (prepend sentences)
+                sentences* (append sentences*)
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences*)
+                                                                 :end (inc (first (last sentences*)))}))]
+    (create-context* (map (fn [[row start-col end-col]]
+                            (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
+                          sentences*))))
 
 (defn suggest
   []
