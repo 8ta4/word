@@ -44,7 +44,7 @@
 (defn style
   [index])
 
-(defn set-extmark
+(defn set-sentence-extmark
   [[row start-col end-col]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
                                                             (:namespace @state)
@@ -53,11 +53,29 @@
                                                             {:end_col end-col
                                                              :end_row row}])))
 
+(defn set-sentence-extmarks
+  [sentences]
+  (all (map set-sentence-extmark sentences)))
+
 (defn prepend
   [sentences]
   (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
                                                                                 :pos (drop-last (first sentences))}))]
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
+
+(defn set-range-extmark
+  [[previous-sentence current-sentence]]
+  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
+                                                            (:namespace @state)
+                                                            (first previous-sentence)
+                                                            (last previous-sentence)
+                                                            {:end_col (last current-sentence)
+                                                             :end_row (first current-sentence)}])))
+
+(defn set-range-extmarks
+  [sentences]
+  (promesa/let [sentences* (prepend sentences)]
+    (all (map set-range-extmark (partition 2 1 sentences*)))))
 
 (defn main
   [plugin]
