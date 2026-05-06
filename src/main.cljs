@@ -53,6 +53,12 @@
                                                             {:end_col end-col
                                                              :end_row row}])))
 
+(defn prepend
+  [sentences]
+  (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
+                                                                                :pos (drop-last (first sentences))}))]
+    (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
+
 (defn main
   [plugin]
   (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
