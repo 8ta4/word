@@ -78,7 +78,11 @@
     (all (map set-range-extmark (partition 2 1 sentences*)))))
 
 (defn suggest
-  [])
+  []
+  (promesa/let [bounds (get-selection-bounds)
+                sentences (apply get-sentences bounds)
+                range-marks (set-range-extmarks sentences)
+                sentence-marks (set-sentence-extmarks sentences)]))
 
 (defn main
   [plugin]
