@@ -1,14 +1,10 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
             [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
+            [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
             [promesa.core :as promesa :refer [all]]))
-
-(def api-key
-  (-> (homedir)
-      (join ".config/word/cerebras")
-      slurp))
 
 (defonce state
   (atom {}))
@@ -90,8 +86,9 @@
     (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
 
 (def create-context*
-  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
-                           (partial zipmap [:previous :target :next])))
+  (comp str
+        (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
+                           (partial zipmap [:previous-sentence :target-sentence :next-sentence])))
         (partial partition 3 1)))
 
 (defn create-context
@@ -114,12 +111,54 @@
   (promesa/let [styles (get-styles)]
     (:prompt (nth styles (:index @state)))))
 
+(def api-key
+  (-> (homedir)
+      (join ".config/word/groq")
+      slurp))
+
+(def groq
+  (Groq. (clj->js {:apiKey api-key})))
+
+(def model
+  "openai/gpt-oss-120b")
+
+(def response-format
+  {:json_schema {:name "word"
+                 :schema {:additionalProperties false
+                          :properties {:explanation {:type "string"}
+                                       :suggestions {:items {:type "string"}
+                                                     :maxItems 2
+                                                     :minItems 2
+                                                     :type "array"}}
+                          :required ["explanation" "suggestions"]
+                          :type "object"}
+                 :strict true}
+   :type "json_schema"})
+
+(defn generate-completion
+  [sentences]
+  (promesa/let [prompt (get-prompt)
+                context (create-context sentences)
+                response (.chat.completions.create groq (clj->js {:messages [{:role "system"
+                                                                              :content prompt}
+                                                                             {:role "user"
+                                                                              :content context}]
+                                                                  :model model
+                                                                  :response_format response-format}))]
+    (-> response
+        (js->clj :keywordize-keys true)
+        :choices
+        first
+        :message
+        :content)))
+
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-marks (set-range-extmarks sentences)
-                    sentence-marks (set-sentence-extmarks sentences)]))))
+                    sentence-marks (set-sentence-extmarks sentences)
+                    completion (generate-completion sentences)]))))
 
 (defn main
   [plugin]
