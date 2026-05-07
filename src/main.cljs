@@ -103,6 +103,11 @@
                             (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
                           sentences*))))
 
+(defn get-styles
+  []
+  (promesa/let [styles (.lua (:nvim @state) "return require('word').config.styles")]
+    (js->clj styles)))
+
 (defn suggest
   []
   (promesa/let [bounds (get-selection-bounds)
