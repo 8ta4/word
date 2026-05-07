@@ -86,7 +86,8 @@
     (setval AFTER-ELEM (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)]) sentences)))
 
 (def create-context*
-  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
+  (comp str
+        (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
                            (partial zipmap [:previous :target :next])))
         (partial partition 3 1)))
 
@@ -118,12 +119,29 @@
 (def groq
   (Groq. (clj->js {:apiKey api-key})))
 
+(def model
+  "openai/gpt-oss-120b")
+
+(defn generate-completion
+  [sentences]
+  (promesa/let [context (create-context sentences)
+                response (.chat.completions.create groq (clj->js {:messages [{:role "user"
+                                                                              :content context}]
+                                                                  :model model}))]
+    (-> response
+        (js->clj :keywordize-keys true)
+        :choices
+        first
+        :message
+        :content)))
+
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-marks (set-range-extmarks sentences)
-                    sentence-marks (set-sentence-extmarks sentences)]))))
+                    sentence-marks (set-sentence-extmarks sentences)
+                    completion (generate-completion sentences)]))))
 
 (defn main
   [plugin]
