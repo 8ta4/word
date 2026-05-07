@@ -24,8 +24,9 @@
                positions))))
 
 (defn get-sentences
-  [start-pos end-pos]
-  (promesa/let [start-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos start-pos}))]
+  []
+  (promesa/let [[start-pos end-pos] (get-selection-bounds)
+                start-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos start-pos}))]
     (if (js->clj start-sentence)
       (promesa/let [end-sentence* (.callFunction (:nvim @state) "Get" (clj->js {:pos end-pos}))
                     end-sentence (if (js->clj end-sentence*)
@@ -103,10 +104,19 @@
                             (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
                           sentences*))))
 
+(defn get-styles
+  []
+  (promesa/let [styles (.lua (:nvim @state) "return require('word').config.styles")]
+    (js->clj styles :keywordize-keys true)))
+
+(defn get-prompt
+  []
+  (promesa/let [styles (get-styles)]
+    (:prompt (nth styles (:index @state)))))
+
 (defn suggest
   []
-  (promesa/let [bounds (get-selection-bounds)
-                sentences (apply get-sentences bounds)]
+  (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-marks (set-range-extmarks sentences)
                     sentence-marks (set-sentence-extmarks sentences)]))))
@@ -115,6 +125,7 @@
   [plugin]
   (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
     (reset! state {:nvim (.-nvim plugin)
-                   :namespace namespace}))
+                   :namespace namespace
+                   :index 0}))
   (.registerFunction plugin "Style" style)
   (.registerFunction plugin "Suggest" suggest))
