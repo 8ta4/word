@@ -22,7 +22,23 @@ The goal is under 1.0 second.
 
 The goal is under $1 a month. That's over 10x cheaper than [Grammarly Pro](https://www.grammarly.com/plans#:~:text=%2412,USD).
 
-## Model
+## Prompting
+
+> Is the prompt I specify a system prompt or a user prompt?
+
+The prompt is a system prompt.
+
+> Does `word` pass the previous sentence to the model if it exists?
+
+Yes. If a previous or following sentence exists, the tool includes it as context. This helps the model maintain flow and consistency.
+
+## Requesting
+
+> Can `⌘ + f` generate suggestions if your cursor is not inside a sentence?
+
+Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions faster. But you might accidentally target the wrong sentence. It's a blessing and a cursor.
+
+## Generating
 
 > What model does `word` use?
 
@@ -40,25 +56,9 @@ $$(1.0s - \text{latency}) \times \text{throughput}$$
 
 The other providers of `gpt-oss-120b` had higher latency and lower throughput than Groq.
 
-## Prompting
+## Displaying
 
-> Is the prompt I specify a system prompt or a user prompt?
-
-The prompt is a system prompt.
-
-> Does `word` pass the previous sentence to the model if it exists?
-
-Yes. If a previous or following sentence exists, the tool includes it as context. This helps the model maintain flow and consistency.
-
-## Suggestion
-
-> Can `⌘ + f` generate suggestions if your cursor is not inside a sentence?
-
-Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions faster. But you might accidentally target the wrong sentence. It's a blessing and a cursor.
-
-## Heads-Up Display (HUD)
-
-> Can the content of the HUD change while you are in Insert mode?
+> Can the content of the HUDHeads-Up Display (HUD) change while you are in Insert mode?
 
 Yes. If an asynchronous request from a command like `⌘ + f` finishes while you're typing, the HUD will update with those fresh suggestions. But the display stays anchored to the specific `extmark` you were on when you entered Insert mode. This lets you use the suggestions as a reference while you're editing the sentence. The HUD won't switch its focus to a different `extmark` just because you moved your cursor in Insert mode.
 
