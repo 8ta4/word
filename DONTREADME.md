@@ -40,15 +40,21 @@ $$(1.0s - \text{latency}) \times \text{throughput}$$
 
 The other providers of `gpt-oss-120b` had higher latency and lower throughput than Groq.
 
+## Prompting
+
+> Is the prompt I specify a system prompt or a user prompt?
+
+The prompt is a system prompt.
+
+> Does `word` pass the previous sentence to the model if it exists?
+
+Yes. If a previous or following sentence exists, the tool includes it as context. This helps the model maintain flow and consistency.
+
 ## Suggestion
 
 > Can `⌘ + f` generate suggestions if your cursor is not inside a sentence?
 
 Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions faster. But you might accidentally target the wrong sentence. It's a blessing and a cursor.
-
-> Does `word` pass the previous sentence to the model if it exists?
-
-Yes. If a previous or following sentence exists, the tool includes it as context. This helps the model maintain flow and consistency.
 
 ## Heads-Up Display (HUD)
 

@@ -89,10 +89,6 @@
 
 ## Usage
 
-> Is the prompt I specify a system prompt or a user prompt?
-
-The prompt is a system prompt.
-
 > How do I get suggestions from Normal mode?
 
 Press `⌘ + f`. Think fix.
