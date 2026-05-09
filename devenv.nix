@@ -35,6 +35,9 @@
   scripts.run.exec = ''
     nvim +"lua vim.fn.Style(1)"
   '';
+  scripts.watch.exec = ''
+    nvim +star +"te tail -F node.log -n +1"
+  '';
 
   # https://devenv.sh/basics/
   enterShell = ''
