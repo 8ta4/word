@@ -47,6 +47,7 @@
     npm i
     export PATH="$DEVENV_ROOT/node_modules/.bin:$PATH"
     export NVIM_NODE_LOG_FILE="$DEVENV_ROOT/node.log"
+    export NVIM_NODE_LOG_LEVEL=info
     sed "s|{{dir}}|$DEVENV_ROOT|g" template.lua > "$HOME"/.config/nvim/lua/plugins/word.lua
   '';
 
