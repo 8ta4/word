@@ -44,6 +44,10 @@ Yes. If a previous or following sentence exists, the tool includes it as context
 
 Yes. If you hit `⌘ + f` while your cursor is between sentences, the plugin targets the next available sentence. This makes requesting suggestions faster. But you might accidentally target the wrong sentence. It's a blessing and a cursor.
 
+> Does `word` cancel a pending LLM API request for a sentence if a new one is made for that same sentence?
+
+No. Since it's unlikely the request content has changed in that tiny window between requests, `word` sticks with whichever response arrives first.
+
 ## Generating
 
 > What model does `word` use?
@@ -64,6 +68,14 @@ The other providers of `gpt-oss-120b` had higher latency and lower throughput th
 
 ## Highlighting
 
+> Does `word` show an indicator on the targeted sentence while a request is pending?
+
+Yes. `word` applies a highlight group to the targeted sentence.
+
+> What highlight group is used for pending requests?
+
+`DiagnosticUnderlineWarn` is used. The result could be a pass or a fail.
+
 > Does `word` show a pass or fail indicator on the targeted sentence?
 
 Yes. The plugin applies highlight groups to the targeted sentence.
@@ -71,6 +83,22 @@ Yes. The plugin applies highlight groups to the targeted sentence.
 It's faster to digest a binary indicator than a wall of text.
 
 Highlighting the sentence allows you to scan for issues across multiple sentences visible in the buffer without moving your cursor to each sentence.
+
+> What highlight group is used when a sentence fails?
+
+`DiagnosticUnderlineError` is used.
+
+> What highlight group is used when a sentence passes?
+
+`DiagnosticUnderlineOk` is used. It's the semantic opposite of an error.
+
+> Does `word` show an indicator on the sentence you can apply a suggestion to without moving the cursor?
+
+Yes. `word` applies a highlight group to the targeted sentence.
+
+> What highlight group is used for indicating the sentence you can apply a suggestion to without moving the cursor?
+
+`LspReferenceText` is used. Most themes don't render this group as an underline. This allows the target indicator to sit on top of the `DiagnosticUnderlineWarn`, `DiagnosticUnderlineError`, and `DiagnosticUnderlineOk` highlights.
 
 ## Displaying
 
@@ -105,6 +133,16 @@ Yes. Even if a sentence passes, the tool will still throw out two alternatives t
 > Does `word` cache the suggestions it generates?
 
 Yes. The cache holds the two most recent suggestions for each sentence.
+
+> Does a response overwrite cached suggestions?
+
+No. This prevents suggestions from swapping out while you are reading them.
+
+When `word` makes a request, it clears any existing suggestions that overlap with the range where the new ones will appear. The first response that makes it back saves its data into that now-empty cache. Subsequent responses won't change cached suggestions.
+
+> Can suggestions that target a deleted sentence reappear if I undo the deletion?
+
+Yes. Neovim's native undo tree restores the `extmark`. That mark stays linked to the existing cache entry.
 
 > Will suggestions for one sentence overwrite those for an identical sentence elsewhere?
 
