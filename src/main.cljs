@@ -190,7 +190,7 @@
     (when-not (empty? sentences)
       (promesa/let [range-bounds (get-range-bounds sentences)
                     overlapping-range-marks (get-range-marks range-bounds)
-                    range-marks (set-range-extmarks range-bounds)
+                    initialized-range-marks (set-range-extmarks range-bounds)
                     sentence-marks (set-sentence-extmarks sentences)
                     prompt (get-prompt)
                     contexts (get-contexts sentences)]
