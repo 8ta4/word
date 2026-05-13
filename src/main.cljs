@@ -181,17 +181,22 @@
 
 (defn handle*
   [payload]
-  (promesa/let [extmark (request "nvim_buf_get_extmark_by_id"
-                                 (:buffer payload)
-                                 (:range-namespace @state)
-                                 (:extmark payload)
-                                 {:details true})]
-    (when-not (empty? extmark)
-      (promesa/let [overlapping-extmarks (request "nvim_buf_get_extmarks"
+  (promesa/let [range-extmark (request "nvim_buf_get_extmark_by_id"
+                                       (:buffer payload)
+                                       (:range-namespace @state)
+                                       (:extmark payload)
+                                       {:details true})]
+    (when-not (empty? range-extmark)
+      (promesa/let [sentence-extmark (request "nvim_buf_get_extmark_by_id"
+                                              (:buffer payload)
+                                              (:sentence-namespace @state)
+                                              (:extmark payload)
+                                              {:details true})
+                    overlapping-extmarks (request "nvim_buf_get_extmarks"
                                                   (:buffer payload)
                                                   (:range-namespace @state)
-                                                  (take 2 (js->clj extmark :keywordize-keys true))
-                                                  ((juxt :end_row :end_col) (last (js->clj extmark :keywordize-keys true)))
+                                                  (take 2 range-extmark)
+                                                  ((juxt :end_row :end_col) (last range-extmark))
                                                   {:overlap true})]
         (all (mapcat (comp (apply juxt (map #(partial request "nvim_buf_del_extmark" (:buffer payload) %)
                                             ((juxt :range-namespace :sentence-namespace) @state)))
