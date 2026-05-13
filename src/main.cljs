@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM ALL MAP-VALS NONE pred= setval setval* transform]]
+            [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -48,18 +48,20 @@
                                                                                 :pos (drop-last (first sentences))}))]
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
-(defn parse-promise
-  [promise]
-  (.then promise #(js->clj % :keywordize-keys true)))
+(defn request
+  [function & args]
+  (.then (.request (:nvim @state) function (clj->js args))
+         #(js->clj % :keywordize-keys true)))
 
 (defn set-range-extmark
   [[previous-sentence target-sentence]]
-  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:range-namespace @state)
-                                                            (first previous-sentence)
-                                                            (last previous-sentence)
-                                                            {:end_col (last target-sentence)
-                                                             :end_row (first target-sentence)}])))
+  (request "nvim_buf_set_extmark"
+           0
+           (:pending-range-namespace @state)
+           (first previous-sentence)
+           (last previous-sentence)
+           {:end_col (last target-sentence)
+            :end_row (first target-sentence)}))
 
 (defn set-range-extmarks
   [sentences]
@@ -68,17 +70,17 @@
 
 (defn set-sentence-extmark
   [[row start-col end-col]]
-  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:sentence-namespace @state)
-                                                            row
-                                                            start-col
-                                                            {:end_col end-col
-                                                             :end_row row
-                                                             :hl_group "DiagnosticUnderlineWarn"}])))
+  (request "nvim_buf_set_extmark"
+           0
+           (:pending-sentence-namespace @state)
+           row
+           start-col
+           {:end_col end-col
+            :end_row row
+            :hl_group "DiagnosticUnderlineWarn"}))
 
 (def set-sentence-extmarks
-  (comp parse-promise
-        all
+  (comp all
         (partial map set-sentence-extmark)))
 
 (def llast
@@ -177,17 +179,60 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
-(defn handle
-  [payload])
+(defn handle*
+  [payload]
+  (promesa/let [range-extmark (request "nvim_buf_get_extmark_by_id"
+                                       (:buffer payload)
+                                       (:pending-range-namespace @state)
+                                       (:extmark payload)
+                                       {:details true})]
+    (when-not (empty? range-extmark)
+      (promesa/let [sentence-extmark (request "nvim_buf_get_extmark_by_id"
+                                              (:buffer payload)
+                                              (:pending-sentence-namespace @state)
+                                              (:extmark payload)
+                                              {:details true})
+                    overlapping-extmarks (request "nvim_buf_get_extmarks"
+                                                  (:buffer payload)
+                                                  (:pending-range-namespace @state)
+                                                  (take 2 range-extmark)
+                                                  ((juxt :end_row :end_col) (last range-extmark))
+                                                  {:overlap true})]
+        (request "nvim_buf_set_extmark"
+                 0
+                 (:resolved-sentence-namespace @state)
+                 (first sentence-extmark)
+                 (second sentence-extmark)
+                 (setval :hl_group
+                         (if (:pass payload)
+                           "DiagnosticUnderlineHint"
+                           "DiagnosticUnderlineError")
+                         (select-keys (last sentence-extmark) #{:end_row :end_col})))
+        (request "nvim_buf_set_extmark"
+                 0
+                 (:resolved-range-namespace @state)
+                 (first range-extmark)
+                 (second range-extmark)
+                 (select-keys (last range-extmark) #{:end_row :end_col}))
+        (all (mapcat (comp (apply juxt (map #(partial request "nvim_buf_del_extmark" (:buffer payload) %)
+                                            ((juxt :pending-range-namespace :pending-sentence-namespace) @state)))
+                           first)
+                     overlapping-extmarks))))))
+
+(def handle
+  (comp handle*
+        #(js->clj % :keywordize-keys true)
+        first))
 
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
-      (promesa/let [prompt (get-prompt)
+      (promesa/let [extmarks (set-sentence-extmarks sentences)
+                    prompt (get-prompt)
                     contexts (get-contexts sentences)
-                    extmarks (set-range-extmarks sentences)]
-        (set-sentence-extmarks sentences)
+                    buffer (.-buffer (:nvim @state))]
+        (set-range-extmarks sentences)
         (dorun (map (fn [context extmark]
                       (promesa/let [response (.chat.completions.create groq
                                                                        (clj->js {:messages [{:role "system"
@@ -198,7 +243,8 @@
                                                                                  :response_format response-format}))]
                         (->> response
                              parse-response
-                             (setval :extmark extmark)
+                             (merge {:extmark extmark
+                                     :buffer (.-id buffer)})
                              clj->js
                              (.callFunction (:nvim @state) "Handle"))))
                     contexts
@@ -206,12 +252,16 @@
 
 (defn main
   [plugin]
-  (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
-                sentence-namespace (.createNamespace (.-nvim plugin) "sentence")]
+  (promesa/let [pending-range-namespace (.createNamespace (.-nvim plugin) "pending-range")
+                pending-sentence-namespace (.createNamespace (.-nvim plugin) "pending-sentence")
+                resolved-range-namespace (.createNamespace (.-nvim plugin) "resolved-range")
+                resolved-sentence-namespace (.createNamespace (.-nvim plugin) "resolved-sentence")]
     (reset! state {:index 0
                    :nvim (.-nvim plugin)
-                   :range-namespace range-namespace
-                   :sentence-namespace sentence-namespace}))
+                   :pending-range-namespace pending-range-namespace
+                   :pending-sentence-namespace pending-sentence-namespace
+                   :resolved-range-namespace  resolved-range-namespace
+                   :resolved-sentence-namespace resolved-sentence-namespace}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true}))
   (.registerFunction plugin "Handle" handle (clj->js {:sync true})))
