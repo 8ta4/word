@@ -177,8 +177,17 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
-(defn handle
-  [payload])
+(defn handle*
+  [payload]
+  (.request (:nvim @state) "nvim_buf_get_extmark_by_id" (clj->js [(:buffer payload)
+                                                                  (:range-namespace @state)
+                                                                  (:extmark payload)
+                                                                  {:details true}])))
+
+(def handle
+  (comp handle*
+        #(js->clj % :keywordize-keys true)
+        first))
 
 (defn suggest
   []
