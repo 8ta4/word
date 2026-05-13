@@ -1,6 +1,7 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL MAP-VALS NONE pred= setval setval* transform]]
+            [cljs.core.async :refer [chan]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -45,7 +46,7 @@
 (defn set-sentence-extmark
   [[row start-col end-col]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:namespace @state)
+                                                            (:sentence-namespace @state)
                                                             row
                                                             start-col
                                                             {:end_col end-col
@@ -63,18 +64,22 @@
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
 (defn set-range-extmark
-  [[previous-sentence target-sentence]]
+  [[start end]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:namespace @state)
-                                                            (first previous-sentence)
-                                                            (last previous-sentence)
-                                                            {:end_col (last target-sentence)
-                                                             :end_row (first target-sentence)}])))
+                                                            (:range-namespace @state)
+                                                            (first start)
+                                                            (last start)
+                                                            {:end_col (last end)
+                                                             :end_row (first end)}])))
 
-(defn set-range-extmarks
+(def set-range-extmarks
+  (comp all
+        (partial map set-range-extmark)))
+
+(defn get-range-bounds
   [sentences]
   (promesa/let [sentences* (prepend sentences)]
-    (all (map set-range-extmark (partition 2 1 sentences*)))))
+    (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
 
 (def llast
   (comp last last))
@@ -168,32 +173,31 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
-(defn get-analyses
-  [sentences]
-  (promesa/let [prompt (get-prompt)
-                context (get-contexts sentences)
-                responses (all (map #(.chat.completions.create groq (clj->js {:messages [{:role "system"
-                                                                                          :content prompt}
-                                                                                         {:role "user"
-                                                                                          :content %}]
-                                                                              :model model
-                                                                              :response_format response-format}))
-                                    context))]
-    (map parse-response responses)))
-
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
-      (promesa/let [range-marks (set-range-extmarks sentences)
+      (promesa/let [range-bounds (get-range-bounds sentences)
+                    range-marks (set-range-extmarks range-bounds)
                     sentence-marks (set-sentence-extmarks sentences)
-                    analyses (get-analyses sentences)]))))
+                    prompt (get-prompt)
+                    contexts (get-contexts sentences)]
+        (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
+                                                                                           :content prompt}
+                                                                                          {:role "user"
+                                                                                           :content %}]
+                                                                               :model model
+                                                                               :response_format response-format}))]
+                 (parse-response response))
+              contexts)))))
 
 (defn main
   [plugin]
-  (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
+  (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
+                sentence-namespace (.createNamespace (.-nvim plugin) "corge")]
     (reset! state {:nvim (.-nvim plugin)
-                   :namespace namespace
+                   :range-namespace range-namespace
+                   :sentence-namespace sentence-namespace
                    :index 0}))
-  (.registerFunction plugin "Style" style)
-  (.registerFunction plugin "Suggest" suggest))
+  (.registerFunction plugin "Style" style (clj->js {:sync true}))
+  (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
