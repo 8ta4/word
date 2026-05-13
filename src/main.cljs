@@ -214,7 +214,7 @@
 (defn main
   [plugin]
   (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
-                sentence-namespace (.createNamespace (.-nvim plugin) "corge")]
+                sentence-namespace (.createNamespace (.-nvim plugin) "sentence")]
     (reset! state {:index 0
                    :nvim (.-nvim plugin)
                    :range-namespace range-namespace
