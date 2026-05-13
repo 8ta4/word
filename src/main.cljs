@@ -173,22 +173,27 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
+(defn handle
+  [payload])
+
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [prompt (get-prompt)
-                    contexts (get-contexts sentences)]
-        (set-range-extmarks sentences)
+                    contexts (get-contexts sentences)
+                    extmarks (set-range-extmarks sentences)]
         (set-sentence-extmarks sentences)
-        (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
-                                                                                           :content prompt}
-                                                                                          {:role "user"
-                                                                                           :content %}]
-                                                                               :model model
-                                                                               :response_format response-format}))]
-                 (parse-response response))
-              contexts)))))
+        (dorun (map (fn [context extmark]
+                      (promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
+                                                                                                  :content prompt}
+                                                                                                 {:role "user"
+                                                                                                  :content context}]
+                                                                                      :model model
+                                                                                      :response_format response-format}))]
+                        (.callFunction (:nvim @state) "Handle" (clj->js (setval :extmark extmark (parse-response response))))))
+                    contexts
+                    extmarks))))))
 
 (defn main
   [plugin]
@@ -199,4 +204,5 @@
                    :range-namespace range-namespace
                    :sentence-namespace sentence-namespace}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
-  (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
+  (.registerFunction plugin "Suggest" suggest (clj->js {:sync true}))
+  (.registerFunction plugin "Handle" handle (clj->js {:sync true})))
