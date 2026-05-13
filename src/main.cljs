@@ -48,28 +48,23 @@
                                                                                 :pos (drop-last (first sentences))}))]
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
-(defn get-range-bounds
-  [sentences]
-  (promesa/let [sentences* (prepend sentences)]
-    (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
-
 (defn parse-promise
   [promise]
   (.then promise #(js->clj % :keywordize-keys true)))
 
 (defn set-range-extmark
-  [[start end]]
+  [[previous-sentence target-sentence]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
                                                             (:range-namespace @state)
-                                                            (first start)
-                                                            (last start)
-                                                            {:end_col (last end)
-                                                             :end_row (first end)}])))
+                                                            (first previous-sentence)
+                                                            (last previous-sentence)
+                                                            {:end_col (last target-sentence)
+                                                             :end_row (first target-sentence)}])))
 
-(def set-range-extmarks
-  (comp parse-promise
-        all
-        (partial map set-range-extmark)))
+(defn set-range-extmarks
+  [sentences]
+  (promesa/let [sentences* (prepend sentences)]
+    (all (map set-range-extmark (partition 2 1 sentences*)))))
 
 (defn set-sentence-extmark
   [[row start-col end-col]]
@@ -182,11 +177,10 @@
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
-      (promesa/let [range-bounds (get-range-bounds sentences)
-                    initialized-range-extmarks (set-range-extmarks range-bounds)
-                    sentence-extmarks (set-sentence-extmarks sentences)
-                    prompt (get-prompt)
+      (promesa/let [prompt (get-prompt)
                     contexts (get-contexts sentences)]
+        (set-range-extmarks sentences)
+        (set-sentence-extmarks sentences)
         (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
                                                                                            :content prompt}
                                                                                           {:role "user"
