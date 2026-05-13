@@ -43,19 +43,6 @@
 (defn style
   [index])
 
-(defn set-sentence-extmark
-  [[row start-col end-col]]
-  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:sentence-namespace @state)
-                                                            row
-                                                            start-col
-                                                            {:end_col end-col
-                                                             :end_row row
-                                                             :hl_group "DiagnosticUnderlineWarn"}])))
-
-(def set-sentence-extmarks
-  (comp all (partial map set-sentence-extmark)))
-
 (defn prepend
   [sentences]
   (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
@@ -75,8 +62,14 @@
                                                              end
                                                              {:overlap true}])))
 
+(defn parse-promise
+  [promise]
+  (.then promise #(js->clj % :keywordize-keys true)))
+
 (def get-range-extmarks
-  (comp all (partial map get-range-extmarks*)))
+  (comp parse-promise
+        all
+        (partial map get-range-extmarks*)))
 
 (defn set-range-extmark
   [[start end]]
@@ -88,8 +81,24 @@
                                                              :end_row (first end)}])))
 
 (def set-range-extmarks
-  (comp all
+  (comp parse-promise
+        all
         (partial map set-range-extmark)))
+
+(defn set-sentence-extmark
+  [[row start-col end-col]]
+  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
+                                                            (:sentence-namespace @state)
+                                                            row
+                                                            start-col
+                                                            {:end_col end-col
+                                                             :end_row row
+                                                             :hl_group "DiagnosticUnderlineWarn"}])))
+
+(def set-sentence-extmarks
+  (comp parse-promise
+        all
+        (partial map set-sentence-extmark)))
 
 (def llast
   (comp last last))
