@@ -1,7 +1,7 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM ALL MAP-VALS NONE pred= setval setval* transform]]
-            [cljs.core.async :refer [chan]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE pred= setval setval* transform transform*]]
+            [core :refer [multi-path]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -54,7 +54,7 @@
   (promesa/let [sentences* (prepend sentences)]
     (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
 
-(defn get-range-extmarks*
+(defn get-range-extmarks
   [[start end]]
   (.request (:nvim @state) "nvim_buf_get_extmarks" (clj->js [0
                                                              (:range-namespace @state)
@@ -66,10 +66,12 @@
   [promise]
   (.then promise #(js->clj % :keywordize-keys true)))
 
-(def get-range-extmarks
-  (comp parse-promise
+(def get-extmarks-sets
+  (comp #(.then % (partial map (comp set
+                                     (partial map first))))
+        parse-promise
         all
-        (partial map get-range-extmarks*)))
+        (partial map get-range-extmarks)))
 
 (defn set-range-extmark
   [[start end]]
@@ -197,11 +199,22 @@
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-bounds (get-range-bounds sentences)
-                    overlapping-range-extmarks (get-range-extmarks range-bounds)
+                    overlapping-extmarks-sets (get-extmarks-sets range-bounds)
                     initialized-range-extmarks (set-range-extmarks range-bounds)
                     sentence-extmarks (set-sentence-extmarks sentences)
                     prompt (get-prompt)
                     contexts (get-contexts sentences)]
+        (transform [ATOM :cache]
+                   (apply comp (map (fn [initialized-range-extmark overlapping-extmarks sentence-extmark]
+                                      (comp (partial setval* [initialized-range-extmark :sentence] sentence-extmark)
+                                            (partial transform*
+                                                     [(apply multi-path overlapping-extmarks) :range]
+                                                     #(conj % initialized-range-extmark))
+                                            (partial setval* [initialized-range-extmark :range] overlapping-extmarks)))
+                                    initialized-range-extmarks
+                                    overlapping-extmarks-sets
+                                    sentence-extmarks))
+                   state)
         (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
                                                                                            :content prompt}
                                                                                           {:role "user"
@@ -214,10 +227,11 @@
 (defn main
   [plugin]
   (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
-                sentence-namespace (.createNamespace (.-nvim plugin) "corge")]
-    (reset! state {:nvim (.-nvim plugin)
+                sentence-namespace (.createNamespace (.-nvim plugin) "sentence")]
+    (reset! state {:cache {}
+                   :index 0
+                   :nvim (.-nvim plugin)
                    :range-namespace range-namespace
-                   :sentence-namespace sentence-namespace
-                   :index 0}))
+                   :sentence-namespace sentence-namespace}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
