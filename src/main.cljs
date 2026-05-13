@@ -43,25 +43,33 @@
 (defn style
   [index])
 
-(defn set-sentence-extmark
-  [[row start-col end-col]]
-  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:sentence-namespace @state)
-                                                            row
-                                                            start-col
-                                                            {:end_col end-col
-                                                             :end_row row
-                                                             :hl_group "DiagnosticUnderlineWarn"}])))
-
-(defn set-sentence-extmarks
-  [sentences]
-  (all (map set-sentence-extmark sentences)))
-
 (defn prepend
   [sentences]
   (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
                                                                                 :pos (drop-last (first sentences))}))]
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
+
+(defn get-range-bounds
+  [sentences]
+  (promesa/let [sentences* (prepend sentences)]
+    (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
+
+(defn get-range-extmarks*
+  [[start end]]
+  (.request (:nvim @state) "nvim_buf_get_extmarks" (clj->js [0
+                                                             (:range-namespace @state)
+                                                             start
+                                                             end
+                                                             {:overlap true}])))
+
+(defn parse-promise
+  [promise]
+  (.then promise #(js->clj % :keywordize-keys true)))
+
+(def get-range-extmarks
+  (comp parse-promise
+        all
+        (partial map get-range-extmarks*)))
 
 (defn set-range-extmark
   [[start end]]
@@ -73,13 +81,24 @@
                                                              :end_row (first end)}])))
 
 (def set-range-extmarks
-  (comp all
+  (comp parse-promise
+        all
         (partial map set-range-extmark)))
 
-(defn get-range-bounds
-  [sentences]
-  (promesa/let [sentences* (prepend sentences)]
-    (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
+(defn set-sentence-extmark
+  [[row start-col end-col]]
+  (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
+                                                            (:sentence-namespace @state)
+                                                            row
+                                                            start-col
+                                                            {:end_col end-col
+                                                             :end_row row
+                                                             :hl_group "DiagnosticUnderlineWarn"}])))
+
+(def set-sentence-extmarks
+  (comp parse-promise
+        all
+        (partial map set-sentence-extmark)))
 
 (def llast
   (comp last last))
@@ -178,8 +197,9 @@
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-bounds (get-range-bounds sentences)
-                    range-marks (set-range-extmarks range-bounds)
-                    sentence-marks (set-sentence-extmarks sentences)
+                    overlapping-range-extmarks (get-range-extmarks range-bounds)
+                    initialized-range-extmarks (set-range-extmarks range-bounds)
+                    sentence-extmarks (set-sentence-extmarks sentences)
                     prompt (get-prompt)
                     contexts (get-contexts sentences)]
         (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
