@@ -205,13 +205,15 @@
                     prompt (get-prompt)
                     contexts (get-contexts sentences)]
         (transform [ATOM :cache]
-                   (apply comp (map (fn [initialized-range-extmark overlapping-extmarks]
-                                      (comp (partial transform*
+                   (apply comp (map (fn [initialized-range-extmark overlapping-extmarks sentence-extmark]
+                                      (comp (partial setval* [initialized-range-extmark :sentence] sentence-extmark)
+                                            (partial transform*
                                                      [(apply multi-path overlapping-extmarks) :range]
                                                      #(conj % initialized-range-extmark))
                                             (partial setval* [initialized-range-extmark :range] overlapping-extmarks)))
                                     initialized-range-extmarks
-                                    overlapping-extmarks-sets))
+                                    overlapping-extmarks-sets
+                                    sentence-extmarks))
                    state)
         (run! #(promesa/let [response (.chat.completions.create groq (clj->js {:messages [{:role "system"
                                                                                            :content prompt}
