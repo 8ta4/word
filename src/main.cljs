@@ -53,9 +53,8 @@
                                                              :end_row row
                                                              :hl_group "DiagnosticUnderlineWarn"}])))
 
-(defn set-sentence-extmarks
-  [sentences]
-  (all (map set-sentence-extmark sentences)))
+(def set-sentence-extmarks
+  (comp all (partial map set-sentence-extmark)))
 
 (defn prepend
   [sentences]
