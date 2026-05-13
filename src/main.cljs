@@ -1,6 +1,7 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE pred= setval setval* transform]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE pred= setval setval* transform transform*]]
+            [core :refer [multi-path]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -66,7 +67,8 @@
   (.then promise #(js->clj % :keywordize-keys true)))
 
 (def get-extmarks-sets
-  (comp #(.then % (partial map set))
+  (comp #(.then % (partial map (comp set
+                                     (partial map first))))
         parse-promise
         all
         (partial map get-range-extmarks)))
@@ -204,7 +206,10 @@
                     contexts (get-contexts sentences)]
         (transform [ATOM :cache]
                    (apply comp (map (fn [initialized-range-extmark overlapping-extmarks]
-                                      (partial setval* [initialized-range-extmark :range] overlapping-extmarks))
+                                      (comp (partial transform*
+                                                     [(apply multi-path overlapping-extmarks) :range]
+                                                     #(conj % initialized-range-extmark))
+                                            (partial setval* [initialized-range-extmark :range] overlapping-extmarks)))
                                     initialized-range-extmarks
                                     overlapping-extmarks-sets))
                    state)
