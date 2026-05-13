@@ -173,11 +173,23 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
+(defn get-range-marks*
+  [[start end]]
+  (.request (:nvim @state) "nvim_buf_get_extmarks" (clj->js [0
+                                                             (:range-namespace @state)
+                                                             start
+                                                             end
+                                                             {:overlap true}])))
+
+(def get-range-marks
+  (comp all (partial map get-range-marks*)))
+
 (defn suggest
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
       (promesa/let [range-bounds (get-range-bounds sentences)
+                    overlapping-range-marks (get-range-marks range-bounds)
                     range-marks (set-range-extmarks range-bounds)
                     sentence-marks (set-sentence-extmarks sentences)
                     prompt (get-prompt)
