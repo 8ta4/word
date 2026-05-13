@@ -48,10 +48,6 @@
                                                                                 :pos (drop-last (first sentences))}))]
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
-(defn parse-promise
-  [promise]
-  (.then promise #(js->clj % :keywordize-keys true)))
-
 (defn request
   [function & args]
   (.then (.request (:nvim @state) function (clj->js args))
@@ -84,8 +80,7 @@
             :hl_group "DiagnosticUnderlineWarn"}))
 
 (def set-sentence-extmarks
-  (comp parse-promise
-        all
+  (comp all
         (partial map set-sentence-extmark)))
 
 (def llast
