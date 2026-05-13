@@ -46,7 +46,7 @@
 (defn set-sentence-extmark
   [[row start-col end-col]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:namespace @state)
+                                                            (:sentence-namespace @state)
                                                             row
                                                             start-col
                                                             {:end_col end-col
@@ -66,7 +66,7 @@
 (defn set-range-extmark
   [[previous-sentence target-sentence]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
-                                                            (:namespace @state)
+                                                            (:range-namespace @state)
                                                             (first previous-sentence)
                                                             (last previous-sentence)
                                                             {:end_col (last target-sentence)
@@ -188,9 +188,11 @@
 
 (defn main
   [plugin]
-  (promesa/let [namespace (.createNamespace (.-nvim plugin) "word")]
+  (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
+                sentence-namespace (.createNamespace (.-nvim plugin) "corge")]
     (reset! state {:nvim (.-nvim plugin)
-                   :namespace namespace
+                   :range-namespace range-namespace
+                   :sentence-namespace sentence-namespace
                    :index 0}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
