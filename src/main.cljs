@@ -215,9 +215,9 @@
   [plugin]
   (promesa/let [range-namespace (.createNamespace (.-nvim plugin) "range")
                 sentence-namespace (.createNamespace (.-nvim plugin) "corge")]
-    (reset! state {:nvim (.-nvim plugin)
+    (reset! state {:index 0
+                   :nvim (.-nvim plugin)
                    :range-namespace range-namespace
-                   :sentence-namespace sentence-namespace
-                   :index 0}))
+                   :sentence-namespace sentence-namespace}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
