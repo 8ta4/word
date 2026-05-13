@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM MAP-VALS NONE pred= setval setval*]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL MAP-VALS NONE pred= setval setval* transform]]
             [cljs.core.async :refer [chan]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
@@ -64,18 +64,22 @@
     (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
 
 (defn set-range-extmark
-  [[previous-sentence target-sentence]]
+  [[start end]]
   (.request (:nvim @state) "nvim_buf_set_extmark" (clj->js [0
                                                             (:range-namespace @state)
-                                                            (first previous-sentence)
-                                                            (last previous-sentence)
-                                                            {:end_col (last target-sentence)
-                                                             :end_row (first target-sentence)}])))
+                                                            (first start)
+                                                            (last start)
+                                                            {:end_col (last end)
+                                                             :end_row (first end)}])))
 
-(defn set-range-extmarks
+(def set-range-extmarks
+  (comp all
+        (partial map set-range-extmark)))
+
+(defn get-range-bounds
   [sentences]
   (promesa/let [sentences* (prepend sentences)]
-    (all (map set-range-extmark (partition 2 1 sentences*)))))
+    (all (transform [ALL ALL] (juxt first last) (partition 2 1 sentences*)))))
 
 (def llast
   (comp last last))
@@ -173,7 +177,8 @@
   []
   (promesa/let [sentences (get-sentences)]
     (when-not (empty? sentences)
-      (promesa/let [range-marks (set-range-extmarks sentences)
+      (promesa/let [range-bounds (get-range-bounds sentences)
+                    range-marks (set-range-extmarks range-bounds)
                     sentence-marks (set-sentence-extmarks sentences)
                     prompt (get-prompt)
                     contexts (get-contexts sentences)]
