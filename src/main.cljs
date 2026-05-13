@@ -186,7 +186,8 @@
     (when-not (empty? sentences)
       (promesa/let [prompt (get-prompt)
                     contexts (get-contexts sentences)
-                    extmarks (set-range-extmarks sentences)]
+                    extmarks (set-range-extmarks sentences)
+                    buffer (.-buffer (:nvim @state))]
         (set-sentence-extmarks sentences)
         (dorun (map (fn [context extmark]
                       (promesa/let [response (.chat.completions.create groq
@@ -198,7 +199,8 @@
                                                                                  :response_format response-format}))]
                         (->> response
                              parse-response
-                             (setval :extmark extmark)
+                             (merge {:extmark extmark
+                                     :buffer (.-id buffer)})
                              clj->js
                              (.callFunction (:nvim @state) "Handle"))))
                     contexts
