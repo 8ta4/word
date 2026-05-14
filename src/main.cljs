@@ -179,6 +179,10 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
+(defn open-hud
+  []
+  (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"})))
+
 (defn handle*
   [payload]
   (promesa/let [pending-range-extmark (request "nvim_buf_get_extmark_by_id"
