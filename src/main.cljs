@@ -264,8 +264,10 @@
   (promesa/let [pending-range-namespace (.createNamespace (.-nvim plugin) "pending-range")
                 pending-sentence-namespace (.createNamespace (.-nvim plugin) "pending-sentence")
                 resolved-range-namespace (.createNamespace (.-nvim plugin) "resolved-range")
-                resolved-sentence-namespace (.createNamespace (.-nvim plugin) "resolved-sentence")]
-    (reset! state {:cache {}
+                resolved-sentence-namespace (.createNamespace (.-nvim plugin) "resolved-sentence")
+                buffer (.createBuffer (.-nvim plugin) false true)]
+    (reset! state {:buffer buffer
+                   :cache {}
                    :index 0
                    :nvim (.-nvim plugin)
                    :pending-range-namespace pending-range-namespace
