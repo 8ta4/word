@@ -181,7 +181,8 @@
 
 (defn open-hud
   []
-  (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"})))
+  (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                               :style "minimal"})))
 
 (defn handle*
   [payload]
