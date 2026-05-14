@@ -122,6 +122,14 @@ There are a couple of trade-offs with this approach:
 
 - Neovim reserves one line for a status line, which results in a wasted line of screen real estate.
 
+> Is the HUD a horizontal split or a vertical split?
+
+The HUD is a horizontal split. Going vertical would waste screen real estate for a HUD that only needs a few lines.
+
+> When the HUD opens while your cursor is in the top window of a stacked layout, does the HUD pop up under the top or bottom window?
+
+The HUD shows up below the top window. I designed the HUD that way to keep the suggestions in proximity to the text you're editing.
+
 > Can the content of the HUD change while you are in Insert mode?
 
 Yes. If an asynchronous request from a command like `⌘ + f` finishes while you're typing, the HUD will update with those fresh suggestions. But the display stays anchored to the specific `extmark` you were on when you entered Insert mode. This lets you use the suggestions as a reference while you're editing the sentence. The HUD won't switch its focus to a different `extmark` just because you moved your cursor in Insert mode.
