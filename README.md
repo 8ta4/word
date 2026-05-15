@@ -14,9 +14,9 @@
 
 1. Install [Homebrew](https://brew.sh/#install).
 
-1. Make sure you're using [Alacritty](https://github.com/alacritty/alacritty).
+1. Install [Alacritty](https://github.com/alacritty/alacritty).
 
-1. Make sure you're using [`lazy.nvim`](https://github.com/folke/lazy.nvim).
+1. Install [`lazy.nvim`](https://github.com/folke/lazy.nvim).
 
 1. Merge these bindings into your Alacritty configuration:
 
