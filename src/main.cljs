@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM ATOM MAP-VALS NONE pred= setval setval*]]
+            [com.rpl.specter :refer [AFTER-ELEM ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -179,10 +179,44 @@
         :choices
         #(js->clj % :keywordize-keys true)))
 
-(defn open-hud
+(defn format-lines
+  [cache]
+  ((if (:expalanation cache)
+     (partial setval* AFTER-ELEM (:explanation cache))
+     identity)
+   (:suggestions cache)))
+
+(defn render-hud
   []
-  (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                               :style "minimal"})))
+  (promesa/let [window (.-window (:nvim @state))
+                cursor (.-cursor window)
+                cursor* (transform (nthpath 0) dec (js->clj cursor))
+                extmarks (request "nvim_buf_get_extmarks"
+                                  0
+                                  (:resolved-range (:namespace @state))
+                                  cursor*
+                                  cursor*
+                                  {:overlap true})
+                hud-buffer (:buffer @state)
+                active-buffer (.-buffer (:nvim @state))]
+    (when-not (empty? extmarks)
+      (.setLines hud-buffer
+                 (-> @state
+                     :cache
+                     ((-> active-buffer
+                          .-id
+                          str
+                          keyword))
+                     ((-> extmarks
+                          ffirst
+                          str
+                          keyword))
+                     format-lines
+                     clj->js)
+                 (clj->js {:start 0
+                           :end -1}))
+      (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                   :style "minimal"})))))
 
 (defn handle*
   [payload]
