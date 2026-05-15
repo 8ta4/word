@@ -249,7 +249,7 @@
                                                     ((juxt :end_row :end_col) (last pending-range-extmark))
                                                     {:overlap true})
                     resolved-sentence-extmark (request "nvim_buf_set_extmark"
-                                                       0
+                                                       (:buffer payload)
                                                        (:resolved-sentence (:namespace @state))
                                                        (first pending-sentence-extmark)
                                                        (second pending-sentence-extmark)
@@ -268,7 +268,7 @@
                 (select-keys payload #{:explanation :suggestions})
                 state)
         (request "nvim_buf_set_extmark"
-                 0
+                 (:buffer payload)
                  (:resolved-range (:namespace @state))
                  (first pending-range-extmark)
                  (second pending-range-extmark)
