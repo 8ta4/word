@@ -303,6 +303,9 @@
                     contexts
                     extmarks))))))
 
+(defn handle-closing
+  [id])
+
 (defn main
   [plugin]
   (promesa/let [pending-range-namespace (.createNamespace (.-nvim plugin) "pending-range")
@@ -320,4 +323,6 @@
                    :nvim (.-nvim plugin)}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true}))
-  (.registerFunction plugin "Handle" handle (clj->js {:sync true})))
+  (.registerFunction plugin "Handle" handle (clj->js {:sync true}))
+  (.registerAutocmd plugin "WinClosed" handle-closing (clj->js {:eval "expand('<amatch>')",
+                                                                :pattern "*"})))
