@@ -265,7 +265,8 @@
         (all (mapcat (comp (apply juxt (map #(partial request "nvim_buf_del_extmark" (:buffer payload) %)
                                             ((juxt :pending-range :pending-sentence) (:namespace @state))))
                            first)
-                     pending-range-extmarks))))))
+                     pending-range-extmarks))
+        (render-hud)))))
 
 (def handle
   (comp handle*
