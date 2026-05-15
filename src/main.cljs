@@ -1,6 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
-            [com.rpl.specter :refer [AFTER-ELEM ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -53,20 +53,34 @@
   (.then (.request (:nvim @state) function (clj->js args))
          #(js->clj % :keywordize-keys true)))
 
-(defn set-range-extmark
-  [[previous-sentence target-sentence]]
-  (request "nvim_buf_set_extmark"
-           0
-           (:pending-range (:namespace @state))
-           (first previous-sentence)
-           (last previous-sentence)
-           {:end_col (last target-sentence)
-            :end_row (first target-sentence)}))
+(defn refresh-range
+  [[start end]]
+  (promesa/let [extmarks (request "nvim_buf_get_extmarks"
+                                  0
+                                  (:resolved-range (:namespace @state))
+                                  start
+                                  end
+                                  {:overlap true})]
+    (all (mapcat (comp (apply juxt (map #(partial request "nvim_buf_del_extmark" 0 %)
+                                        ((juxt :resolved-range :resolved-sentence) (:namespace @state))))
+                       first)
+                 extmarks))
+    (request "nvim_buf_set_extmark"
+             0
+             (:pending-range (:namespace @state))
+             (first start)
+             (last start)
+             {:end_col (last end)
+              :end_row (first end)})))
 
-(defn set-range-extmarks
+(defn refresh-ranges
   [sentences]
   (promesa/let [sentences* (prepend sentences)]
-    (all (map set-range-extmark (partition 2 1 sentences*)))))
+    (->> sentences*
+         (setval [ALL (nthpath 1)] NONE)
+         (partition 2 1)
+         (map refresh-range)
+         all)))
 
 (defn set-sentence-extmark
   [[row start-col end-col]]
@@ -181,7 +195,7 @@
 
 (defn format-lines
   [cache]
-  ((if (:expalanation cache)
+  ((if (:explanation cache)
      (partial setval* AFTER-ELEM (:explanation cache))
      identity)
    (:suggestions cache)))
@@ -249,7 +263,7 @@
                                                     ((juxt :end_row :end_col) (last pending-range-extmark))
                                                     {:overlap true})
                     resolved-sentence-extmark (request "nvim_buf_set_extmark"
-                                                       0
+                                                       (:buffer payload)
                                                        (:resolved-sentence (:namespace @state))
                                                        (first pending-sentence-extmark)
                                                        (second pending-sentence-extmark)
@@ -268,7 +282,7 @@
                 (select-keys payload #{:explanation :suggestions})
                 state)
         (request "nvim_buf_set_extmark"
-                 0
+                 (:buffer payload)
                  (:resolved-range (:namespace @state))
                  (first pending-range-extmark)
                  (second pending-range-extmark)
@@ -292,7 +306,7 @@
                     prompt (get-prompt)
                     contexts (get-contexts sentences)
                     buffer (.-buffer (:nvim @state))]
-        (set-range-extmarks sentences)
+        (refresh-ranges sentences)
         (dorun (map (fn [context extmark]
                       (promesa/let [response (.chat.completions.create groq
                                                                        (clj->js {:messages [{:role "system"
