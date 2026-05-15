@@ -188,8 +188,8 @@
 
 (defn render-hud
   []
-  (promesa/let [window (.-window (:nvim @state))
-                cursor (.-cursor window)
+  (promesa/let [source-window (.-window (:nvim @state))
+                cursor (.-cursor source-window)
                 cursor* (transform (nthpath 0) dec (js->clj cursor))
                 extmarks (request "nvim_buf_get_extmarks"
                                   0
@@ -198,12 +198,12 @@
                                   cursor*
                                   {:overlap true})
                 hud-buffer (:buffer @state)
-                active-buffer (.-buffer (:nvim @state))]
+                source-buffer (.-buffer (:nvim @state))]
     (when-not (empty? extmarks)
       (.setLines hud-buffer
                  (-> @state
                      :cache
-                     ((-> active-buffer
+                     ((-> source-buffer
                           .-id
                           str
                           keyword))
@@ -215,8 +215,19 @@
                      clj->js)
                  (clj->js {:start 0
                            :end -1}))
-      (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                   :style "minimal"})))))
+      (when-not (and (:window @state)
+                     (->> @state
+                          :window
+                          :source
+                          .-id
+                          (= (.-id source-window))))
+        (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                                              :style "minimal"}))]
+          (setval [ATOM :window]
+                  {:source source-window
+                   :hud hud-window}
+                  state)
+          nil)))))
 
 (defn handle*
   [payload]
@@ -268,7 +279,7 @@
                      pending-range-extmarks))
         (render-hud)))))
 
-(def handle
+(def handle-result
   (comp handle*
         #(js->clj % :keywordize-keys true)
         first))
@@ -295,9 +306,21 @@
                              (merge {:extmark extmark
                                      :buffer (.-id buffer)})
                              clj->js
-                             (.callFunction (:nvim @state) "Handle"))))
+                             (.callFunction (:nvim @state) "HandleResult"))))
                     contexts
                     extmarks))))))
+
+(defn handle-closing
+  [id]
+  (when-let [window (:window @state)]
+    (setval [ATOM :window] NONE state)
+    (when (->> window
+               :source
+               .-id
+               (= (parse-long id)))
+      (.catch (.close (:hud window))
+              (fn [_]
+                (.quit (:nvim @state)))))))
 
 (defn main
   [plugin]
@@ -316,4 +339,6 @@
                    :nvim (.-nvim plugin)}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true}))
-  (.registerFunction plugin "Handle" handle (clj->js {:sync true})))
+  (.registerFunction plugin "HandleResult" handle-result (clj->js {:sync true}))
+  (.registerAutocmd plugin "WinClosed" handle-closing (clj->js {:eval "expand('<amatch>')",
+                                                                :pattern "*"})))
