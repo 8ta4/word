@@ -218,9 +218,10 @@
       (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
                                                                                             :style "minimal"}))]
         (setval [ATOM :window]
-                {:source (.-id source-window)
-                 :hud (.-id hud-window)}
-                state)))))
+                {:source source-window
+                 :hud hud-window}
+                state)
+        nil))))
 
 (defn handle*
   [payload]
