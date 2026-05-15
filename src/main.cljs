@@ -305,7 +305,16 @@
                     extmarks))))))
 
 (defn handle-closing
-  [id])
+  [id]
+  (when-let [window (:window @state)]
+    (setval [ATOM :window] NONE state)
+    (when (->> window
+               :source
+               .-id
+               (= (parse-long id)))
+      (.catch (.close (:hud window))
+              (fn [_]
+                (.quit (:nvim @state)))))))
 
 (defn main
   [plugin]
