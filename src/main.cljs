@@ -358,7 +358,7 @@
                                :resolved-range  resolved-range-namespace
                                :resolved-sentence resolved-sentence-namespace}
                    :nvim (.-nvim plugin)}))
-  (.registerAutocmd plugin "WinClosed" handle-closing (clj->js {:eval "expand('<amatch>')",
+  (.registerAutocmd plugin "WinClosed" handle-closing (clj->js {:eval "expand('<amatch>')"
                                                                 :pattern "*"
                                                                 :sync true}))
   (.registerFunction plugin "HandleResult" handle-result (clj->js {:sync true}))
