@@ -339,9 +339,13 @@
                :source
                .-id
                (= (parse-long id)))
-      (.catch (.close (:hud window))
-              (fn [_]
-                (.quit (:nvim @state)))))))
+      (promesa/let [windows (.-windows (:nvim @state))]
+        (if (->> windows
+                 js->clj
+                 count
+                 (= 2))
+          (.quit (:nvim @state))
+          (.close (:hud window)))))))
 
 (defn main
   [plugin]
