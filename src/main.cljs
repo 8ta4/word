@@ -208,6 +208,8 @@
 
 (defn render-hud
   []
+  ;; We guard against nil (:nvim @state) because Neovim may trigger autocommands during startup.
+  ;; Without this check, accessing properties like (.-window ...) on a null object throws a TypeError.
   (when (:nvim @state)
     (promesa/let [source-window (.-window (:nvim @state))
                   cursor (.-cursor source-window)
