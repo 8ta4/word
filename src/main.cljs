@@ -276,7 +276,7 @@
                                                        (second pending-sentence-extmark)
                                                        (setval :hl_group
                                                                (if (:pass payload)
-                                                                 "DiagnosticUnderlineHint"
+                                                                 "DiagnosticUnderlineOk"
                                                                  "DiagnosticUnderlineError")
                                                                (select-keys (last pending-sentence-extmark) #{:end_row :end_col})))]
         (setval [ATOM
