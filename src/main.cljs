@@ -200,6 +200,12 @@
      identity)
    (:suggestions cache)))
 
+(defn close-hud
+  []
+  (when-let [window (:window @state)]
+    (setval [ATOM :window] NONE state)
+    (.close (:hud window))))
+
 (defn render-hud
   []
   (promesa/let [source-window (.-window (:nvim @state))
@@ -213,35 +219,36 @@
                                   {:overlap true})
                 hud-buffer (:buffer @state)
                 source-buffer (.-buffer (:nvim @state))]
-    (when-not (empty? extmarks)
-      (.setLines hud-buffer
-                 (-> @state
-                     :cache
-                     ((-> source-buffer
-                          .-id
-                          str
-                          keyword))
-                     ((-> extmarks
-                          ffirst
-                          str
-                          keyword))
-                     format-lines
-                     clj->js)
-                 (clj->js {:start 0
-                           :end -1}))
-      (when-not (and (:window @state)
-                     (->> @state
-                          :window
-                          :source
-                          .-id
-                          (= (.-id source-window))))
-        (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                                              :style "minimal"}))]
-          (setval [ATOM :window]
-                  {:source source-window
-                   :hud hud-window}
-                  state)
-          nil)))))
+    (if (empty? extmarks)
+      (close-hud)
+      (do (.setLines hud-buffer
+                     (-> @state
+                         :cache
+                         ((-> source-buffer
+                              .-id
+                              str
+                              keyword))
+                         ((-> extmarks
+                              ffirst
+                              str
+                              keyword))
+                         format-lines
+                         clj->js)
+                     (clj->js {:start 0
+                               :end -1}))
+          (when-not (and (:window @state)
+                         (->> @state
+                              :window
+                              :source
+                              .-id
+                              (= (.-id source-window))))
+            (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                                                  :style "minimal"}))]
+              (setval [ATOM :window]
+                      {:source source-window
+                       :hud hud-window}
+                      state)
+              nil))))))
 
 (defn handle*
   [payload]
