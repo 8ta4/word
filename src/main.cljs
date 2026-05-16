@@ -339,6 +339,8 @@
                :source
                .-id
                (= (parse-long id)))
+      ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
+      ;; E855: Autocommands caused command to abort
       (promesa/let [windows (.-windows (:nvim @state))]
         (if (->> windows
                  js->clj
