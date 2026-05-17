@@ -58,8 +58,8 @@
   (promesa/let [extmarks (request "nvim_buf_get_extmarks"
                                   0
                                   (:resolved-range (:namespace @state))
-                                  start
-                                  end
+                                  (transform (nthpath 1) inc start)
+                                  (transform (nthpath 1) dec end)
                                   {:overlap true})]
     (all (mapcat (comp (apply juxt (map #(partial request "nvim_buf_del_extmark" 0 %)
                                         ((juxt :resolved-range :resolved-sentence) (:namespace @state))))
