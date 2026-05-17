@@ -259,8 +259,8 @@
                   (setval [ATOM :window]
                           {:source (.-id source-window)
                            :hud (.-id hud-window)}
-                          state)
-                  nil))))))))
+                          state)))))))
+    nil))
 
 (defn handle*
   [payload]
@@ -361,7 +361,8 @@
               (.quit (:nvim @state))
               (request "nvim_win_close" (:hud window) true))))
       (:hud window)
-      (setval [ATOM :window] NONE state)
+      (do (setval [ATOM :window] NONE state)
+          nil)
       nil)))
 
 (defn main
