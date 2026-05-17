@@ -219,26 +219,26 @@
                                     (:resolved-range (:namespace @state))
                                     cursor*
                                     cursor*
-                                    {:overlap true})
-                  hud-buffer (:buffer @state)
-                  source-buffer (.-buffer (:nvim @state))]
+                                    {:overlap true})]
       (if (empty? extmarks)
         (close-hud)
-        (do (.setLines hud-buffer
-                       (-> @state
-                           :cache
-                           ((-> source-buffer
-                                .-id
-                                str
-                                keyword))
-                           ((-> extmarks
-                                ffirst
-                                str
-                                keyword))
-                           format-lines
-                           clj->js)
-                       (clj->js {:start 0
-                                 :end -1}))
+        (do (promesa/let [hud-buffer (:buffer @state)
+                          source-buffer (.-buffer (:nvim @state))]
+              (.setLines hud-buffer
+                         (-> @state
+                             :cache
+                             ((-> source-buffer
+                                  .-id
+                                  str
+                                  keyword))
+                             ((-> extmarks
+                                  ffirst
+                                  str
+                                  keyword))
+                             format-lines
+                             clj->js)
+                         (clj->js {:start 0
+                                   :end -1})))
             (when-not (and (:window @state)
                            (->> @state
                                 :window
