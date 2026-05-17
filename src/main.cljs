@@ -204,7 +204,7 @@
   []
   (when-let [window (:window @state)]
     (setval [ATOM :window] NONE state)
-    (.close (:hud window))))
+    (request "nvim_win_close" (:hud window) true)))
 
 (defn render-hud
   []
@@ -243,13 +243,12 @@
                            (->> @state
                                 :window
                                 :source
-                                .-id
                                 (= (.-id source-window))))
               (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
                                                                                                     :style "minimal"}))]
                 (setval [ATOM :window]
-                        {:source source-window
-                         :hud hud-window}
+                        {:source (.-id source-window)
+                         :hud (.-id hud-window)}
                         state)
                 nil)))))))
 
@@ -340,7 +339,6 @@
     (setval [ATOM :window] NONE state)
     (when (->> window
                :source
-               .-id
                (= (parse-long id)))
       ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
       ;; E855: Autocommands caused command to abort
@@ -350,7 +348,7 @@
                  count
                  (= 2))
           (.quit (:nvim @state))
-          (.close (:hud window)))))))
+          (request "nvim_win_close" (:hud window) true))))))
 
 (defn main
   [plugin]
