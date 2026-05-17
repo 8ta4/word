@@ -233,7 +233,20 @@
         (if (empty? extmarks*)
           (close-hud)
           (do (promesa/let [hud-buffer (:buffer @state)
-                            source-buffer (.-buffer (:nvim @state))]
+                            source-buffer (.-buffer (:nvim @state))
+                            extmark (request "nvim_buf_get_extmark_by_id"
+                                             0
+                                             (:resolved-sentence (:namespace @state))
+                                             (ffirst extmarks*)
+                                             {:details true})]
+                (request "nvim_buf_set_extmark"
+                         0
+                         (:active-sentence (:namespace @state))
+                         (first extmark)
+                         (second extmark)
+                         (merge {:hl_group "LspReferenceText"
+                                 :id 1}
+                                (select-keys (last extmark) #{:end_row :end_col})))
                 (.setLines hud-buffer
                            (-> @state
                                :cache
@@ -374,6 +387,7 @@
                 pending-sentence-namespace (.createNamespace (.-nvim plugin) "pending-sentence")
                 resolved-range-namespace (.createNamespace (.-nvim plugin) "resolved-range")
                 resolved-sentence-namespace (.createNamespace (.-nvim plugin) "resolved-sentence")
+                active-sentence-namespace (.createNamespace (.-nvim plugin) "active-sentence")
                 buffer (.createBuffer (.-nvim plugin) false true)]
     (reset! state {:buffer buffer
                    :cache {}
@@ -381,7 +395,8 @@
                    :namespace {:pending-range pending-range-namespace
                                :pending-sentence pending-sentence-namespace
                                :resolved-range  resolved-range-namespace
-                               :resolved-sentence resolved-sentence-namespace}
+                               :resolved-sentence resolved-sentence-namespace
+                               :active-sentence active-sentence-namespace}
                    :nvim (.-nvim plugin)}))
   (.registerAutocmd plugin "CursorMoved" render-hud (clj->js {:pattern "*"
                                                               :sync true}))
