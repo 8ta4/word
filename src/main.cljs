@@ -260,6 +260,8 @@
                           {:source (.-id source-window)
                            :hud (.-id hud-window)}
                           state)))))))
+    ;; We return nil to ensure the promise resolves to a value that can be safely serialized via RPC.
+    ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
 
 (defn handle*
