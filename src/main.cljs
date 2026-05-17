@@ -4,7 +4,7 @@
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
-            [promesa.core :as promesa :refer [all]]))
+            [promesa.core :as promesa :refer [all resolved]]))
 
 (defonce state
   (atom {}))
@@ -204,54 +204,62 @@
   []
   (when-let [window (:window @state)]
     (setval [ATOM :window] NONE state)
-    (.close (:hud window))))
+    (request "nvim_win_close" (:hud window) true)))
+
+(defn outside-hud?
+  []
+  (if-let [active-window (:window @state)]
+    (promesa/let [window (.-window (:nvim @state))]
+      (not= (:hud active-window)
+            (.-id window)))
+    (resolved true)))
 
 (defn render-hud
   []
   ;; We guard against nil (:nvim @state) because Neovim may trigger autocommands during startup.
   ;; Without this check, accessing properties like (.-window ...) on a null object throws a TypeError.
-  (when (:nvim @state)
-    (promesa/let [source-window (.-window (:nvim @state))
-                  cursor (.-cursor source-window)
-                  cursor* (transform (nthpath 0) dec (js->clj cursor))
-                  extmarks (request "nvim_buf_get_extmarks"
-                                    0
-                                    (:resolved-range (:namespace @state))
-                                    cursor*
-                                    cursor*
-                                    {:overlap true})
-                  hud-buffer (:buffer @state)
-                  source-buffer (.-buffer (:nvim @state))]
-      (if (empty? extmarks)
-        (close-hud)
-        (do (.setLines hud-buffer
-                       (-> @state
-                           :cache
-                           ((-> source-buffer
-                                .-id
-                                str
-                                keyword))
-                           ((-> extmarks
-                                ffirst
-                                str
-                                keyword))
-                           format-lines
-                           clj->js)
-                       (clj->js {:start 0
-                                 :end -1}))
-            (when-not (and (:window @state)
-                           (->> @state
-                                :window
-                                :source
-                                .-id
-                                (= (.-id source-window))))
-              (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                                                    :style "minimal"}))]
-                (setval [ATOM :window]
-                        {:source source-window
-                         :hud hud-window}
-                        state)
-                nil)))))))
+  (promesa/let [outside-hud (outside-hud?)]
+    (when (and (:nvim @state) outside-hud)
+      (promesa/let [source-window (.-window (:nvim @state))
+                    cursor (.-cursor source-window)
+                    cursor* (transform (nthpath 0) dec (js->clj cursor))
+                    extmarks (request "nvim_buf_get_extmarks"
+                                      0
+                                      (:resolved-range (:namespace @state))
+                                      cursor*
+                                      cursor*
+                                      {:overlap true})]
+        (if (empty? extmarks)
+          (close-hud)
+          (do (promesa/let [hud-buffer (:buffer @state)
+                            source-buffer (.-buffer (:nvim @state))]
+                (.setLines hud-buffer
+                           (-> @state
+                               :cache
+                               ((-> source-buffer
+                                    .-id
+                                    str
+                                    keyword))
+                               ((-> extmarks
+                                    ffirst
+                                    str
+                                    keyword))
+                               format-lines
+                               clj->js)
+                           (clj->js {:start 0
+                                     :end -1})))
+              (when-not (and (:window @state)
+                             (->> @state
+                                  :window
+                                  :source
+                                  (= (.-id source-window))))
+                (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                                                      :style "minimal"}))]
+                  (setval [ATOM :window]
+                          {:source (.-id source-window)
+                           :hud (.-id hud-window)}
+                          state)
+                  nil))))))))
 
 (defn handle*
   [payload]
@@ -310,29 +318,31 @@
 
 (defn suggest
   []
-  (promesa/let [sentences (get-sentences)]
-    (when-not (empty? sentences)
-      (promesa/let [extmarks (set-sentence-extmarks sentences)
-                    prompt (get-prompt)
-                    contexts (get-contexts sentences)
-                    buffer (.-buffer (:nvim @state))]
-        (refresh-ranges sentences)
-        (dorun (map (fn [context extmark]
-                      (promesa/let [response (.chat.completions.create groq
-                                                                       (clj->js {:messages [{:role "system"
-                                                                                             :content prompt}
-                                                                                            {:role "user"
-                                                                                             :content context}]
-                                                                                 :model model
-                                                                                 :response_format response-format}))]
-                        (->> response
-                             parse-response
-                             (merge {:extmark extmark
-                                     :buffer (.-id buffer)})
-                             clj->js
-                             (.callFunction (:nvim @state) "HandleResult"))))
-                    contexts
-                    extmarks))))))
+  (promesa/let [outside-hud (outside-hud?)]
+    (when outside-hud
+      (promesa/let [sentences (get-sentences)]
+        (when-not (empty? sentences)
+          (promesa/let [extmarks (set-sentence-extmarks sentences)
+                        prompt (get-prompt)
+                        contexts (get-contexts sentences)
+                        buffer (.-buffer (:nvim @state))]
+            (refresh-ranges sentences)
+            (dorun (map (fn [context extmark]
+                          (promesa/let [response (.chat.completions.create groq
+                                                                           (clj->js {:messages [{:role "system"
+                                                                                                 :content prompt}
+                                                                                                {:role "user"
+                                                                                                 :content context}]
+                                                                                     :model model
+                                                                                     :response_format response-format}))]
+                            (->> response
+                                 parse-response
+                                 (merge {:extmark extmark
+                                         :buffer (.-id buffer)})
+                                 clj->js
+                                 (.callFunction (:nvim @state) "HandleResult"))))
+                        contexts
+                        extmarks))))))))
 
 (defn handle-closing
   [id]
@@ -340,7 +350,6 @@
     (setval [ATOM :window] NONE state)
     (when (->> window
                :source
-               .-id
                (= (parse-long id)))
       ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
       ;; E855: Autocommands caused command to abort
@@ -350,7 +359,7 @@
                  count
                  (= 2))
           (.quit (:nvim @state))
-          (.close (:hud window)))))))
+          (request "nvim_win_close" (:hud window) true))))))
 
 (defn main
   [plugin]
