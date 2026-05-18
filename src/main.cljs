@@ -242,45 +242,45 @@
       (promesa/let [extmarks (get-extmarks)]
         (if (empty? extmarks)
           (close-hud)
-          (do (promesa/let [hud-buffer (:buffer @state)
-                            source-buffer (.-buffer (:nvim @state))
-                            extmark (get-sentence-extmark (ffirst extmarks))]
-                (request "nvim_buf_set_extmark"
-                         0
-                         (:active-sentence (:namespace @state))
-                         (first extmark)
-                         (second extmark)
-                         (merge {:hl_group "LspReferenceText"
-                                 :id 1}
-                                (select-keys (last extmark) #{:end_row :end_col})))
-                (.setLines hud-buffer
-                           (-> @state
-                               :cache
-                               ((-> source-buffer
-                                    .-id
-                                    str
-                                    keyword))
-                               ((-> extmarks
-                                    ffirst
-                                    str
-                                    keyword))
-                               format-lines
-                               clj->js)
-                           (clj->js {:start 0
-                                     :end -1})))
-              (promesa/let [source-window (.-window (:nvim @state))]
-                (when-not (and (:window @state)
-                               (->> @state
-                                    :window
-                                    :source
-                                    (= (.-id source-window))))
-                  (close-hud)
-                  (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                                                        :style "minimal"}))]
-                    (setval [ATOM :window]
-                            {:source (.-id source-window)
-                             :hud (.-id hud-window)}
-                            state))))))))
+          (promesa/let [hud-buffer (:buffer @state)
+                        source-buffer (.-buffer (:nvim @state))
+                        extmark (get-sentence-extmark (ffirst extmarks))
+                        source-window (.-window (:nvim @state))]
+            (request "nvim_buf_set_extmark"
+                     0
+                     (:active-sentence (:namespace @state))
+                     (first extmark)
+                     (second extmark)
+                     (merge {:hl_group "LspReferenceText"
+                             :id 1}
+                            (select-keys (last extmark) #{:end_row :end_col})))
+            (.setLines hud-buffer
+                       (-> @state
+                           :cache
+                           ((-> source-buffer
+                                .-id
+                                str
+                                keyword))
+                           ((-> extmarks
+                                ffirst
+                                str
+                                keyword))
+                           format-lines
+                           clj->js)
+                       (clj->js {:start 0
+                                 :end -1}))
+            (when-not (and (:window @state)
+                           (->> @state
+                                :window
+                                :source
+                                (= (.-id source-window))))
+              (close-hud)
+              (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                                                    :style "minimal"}))]
+                (setval [ATOM :window]
+                        {:source (.-id source-window)
+                         :hud (.-id hud-window)}
+                        state)))))))
     ;; We return nil to ensure the promise resolves to a value that can be safely serialized via RPC.
     ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
