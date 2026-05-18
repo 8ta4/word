@@ -212,31 +212,39 @@
             (.-id window)))
     (resolved true)))
 
+(defn get-extmarks
+  []
+  (promesa/let [source-window (.-window (:nvim @state))
+                cursor (.-cursor source-window)
+                cursor* (transform (nthpath 0) dec (js->clj cursor))
+                extmarks (request "nvim_buf_get_extmarks"
+                                  0
+                                  (:resolved-range (:namespace @state))
+                                  cursor*
+                                  cursor*
+                                  {:overlap true})]
+    (js->clj extmarks)))
+
+(defn get-sentence-extmark
+  [id]
+  (request "nvim_buf_get_extmark_by_id"
+           0
+           (:resolved-sentence (:namespace @state))
+           id
+           {:details true}))
+
 (defn render-hud
   []
   ;; We guard against nil (:nvim @state) because Neovim may trigger autocommands during startup.
   ;; Without this check, accessing properties like (.-window ...) on a null object throws a TypeError.
   (promesa/let [outside-hud (outside-hud?)]
     (when (and (:nvim @state) outside-hud)
-      (promesa/let [source-window (.-window (:nvim @state))
-                    cursor (.-cursor source-window)
-                    cursor* (transform (nthpath 0) dec (js->clj cursor))
-                    extmarks (request "nvim_buf_get_extmarks"
-                                      0
-                                      (:resolved-range (:namespace @state))
-                                      cursor*
-                                      cursor*
-                                      {:overlap true})
-                    extmarks* (js->clj extmarks)]
-        (if (empty? extmarks*)
+      (promesa/let [extmarks (get-extmarks)]
+        (if (empty? extmarks)
           (close-hud)
           (do (promesa/let [hud-buffer (:buffer @state)
                             source-buffer (.-buffer (:nvim @state))
-                            extmark (request "nvim_buf_get_extmark_by_id"
-                                             0
-                                             (:resolved-sentence (:namespace @state))
-                                             (ffirst extmarks*)
-                                             {:details true})]
+                            extmark (get-sentence-extmark (ffirst extmarks))]
                 (request "nvim_buf_set_extmark"
                          0
                          (:active-sentence (:namespace @state))
@@ -252,7 +260,7 @@
                                     .-id
                                     str
                                     keyword))
-                               ((-> extmarks*
+                               ((-> extmarks
                                     ffirst
                                     str
                                     keyword))
@@ -260,21 +268,48 @@
                                clj->js)
                            (clj->js {:start 0
                                      :end -1})))
-              (when-not (and (:window @state)
-                             (->> @state
-                                  :window
-                                  :source
-                                  (= (.-id source-window))))
-                (close-hud)
-                (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                                                      :style "minimal"}))]
-                  (setval [ATOM :window]
-                          {:source (.-id source-window)
-                           :hud (.-id hud-window)}
-                          state)))))))
+              (promesa/let [source-window (.-window (:nvim @state))]
+                (when-not (and (:window @state)
+                               (->> @state
+                                    :window
+                                    :source
+                                    (= (.-id source-window))))
+                  (close-hud)
+                  (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
+                                                                                                        :style "minimal"}))]
+                    (setval [ATOM :window]
+                            {:source (.-id source-window)
+                             :hud (.-id hud-window)}
+                            state))))))))
     ;; We return nil to ensure the promise resolves to a value that can be safely serialized via RPC.
     ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
+
+(defn apply-suggestion
+  [index]
+  (promesa/let [extmarks (get-extmarks)]
+    (when-not (empty? extmarks)
+      (promesa/let [extmark (get-sentence-extmark (ffirst extmarks))
+                    buffer (.-buffer (:nvim @state))]
+        (request "nvim_buf_set_text"
+                 (.-id buffer)
+                 (first extmark)
+                 (second extmark)
+                 (:end_row (last extmark))
+                 (:end_col (last extmark))
+                 (-> @state
+                     :cache
+                     ((-> buffer
+                          .-id
+                          str
+                          keyword))
+                     ((-> extmarks
+                          ffirst
+                          str
+                          keyword))
+                     :suggestions
+                     (nth (dec index))
+                     vector))))))
 
 (defn handle-closing
   [id]
