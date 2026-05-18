@@ -408,8 +408,13 @@
         #(js->clj % :keywordize-keys true)
         first))
 
-(defn style
-  [index])
+(defn style*
+  [index]
+  (setval [ATOM :index] (dec index) state)
+  nil)
+
+(def style
+  (comp style* first))
 
 (defn suggest
   []
