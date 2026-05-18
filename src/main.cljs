@@ -302,7 +302,10 @@
                                         str
                                         keyword))
                                    :suggestions
-                                   (nth (dec index)))]
+                                   (nth (dec index)))
+                    opts {:end_col (+ (second extmark) (count suggestion))
+                          :end_row (first extmark)
+                          :id (ffirst extmarks)}]
         (request "nvim_buf_set_text"
                  (.-id buffer)
                  (first extmark)
@@ -314,12 +317,15 @@
         (request "nvim_buf_set_extmark"
                  (.-id buffer)
                  (:resolved-sentence (:namespace @state))
+                 (second (first extmarks))
+                 (last (first extmarks))
+                 opts)
+        (request "nvim_buf_set_extmark"
+                 (.-id buffer)
+                 (:resolved-range (:namespace @state))
                  (first extmark)
                  (second extmark)
-                 {:end_col (+ (second extmark) (count suggestion))
-                  :end_row (first extmark)
-                  :hl_group "DiagnosticUnderlineOk"
-                  :id (ffirst extmarks)})))))
+                 (setval :hl_group "DiagnosticUnderlineOk" opts))))))
 
 (defn handle-closing
   [id]
