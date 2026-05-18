@@ -285,36 +285,55 @@
     ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
 
-(defn apply-suggestion
+(defn apply-suggestion*
   [index]
   (promesa/let [extmarks (get-extmarks)]
     (when-not (empty? extmarks)
       (promesa/let [extmark (get-sentence-extmark (ffirst extmarks))
-                    buffer (.-buffer (:nvim @state))]
+                    buffer (.-buffer (:nvim @state))
+                    suggestion (-> @state
+                                   :cache
+                                   ((-> buffer
+                                        .-id
+                                        str
+                                        keyword))
+                                   ((-> extmarks
+                                        ffirst
+                                        str
+                                        keyword))
+                                   :suggestions
+                                   (nth (dec index)))
+                    opts {:end_col (+ (second extmark) (count suggestion))
+                          :end_row (first extmark)
+                          :id (ffirst extmarks)}]
         (request "nvim_buf_set_text"
                  (.-id buffer)
                  (first extmark)
                  (second extmark)
                  (:end_row (last extmark))
                  (:end_col (last extmark))
-                 (-> @state
-                     :cache
-                     ((-> buffer
-                          .-id
-                          str
-                          keyword))
-                     ((-> extmarks
-                          ffirst
-                          str
-                          keyword))
-                     :suggestions
-                     (nth (dec index))
-                     vector))))))
+                 [suggestion])
+        ;; https://github.com/neovim/neovim/issues/30331
+        (request "nvim_buf_set_extmark"
+                 (.-id buffer)
+                 (:resolved-sentence (:namespace @state))
+                 (second (first extmarks))
+                 (last (first extmarks))
+                 opts)
+        (request "nvim_buf_set_extmark"
+                 (.-id buffer)
+                 (:resolved-range (:namespace @state))
+                 (first extmark)
+                 (second extmark)
+                 (setval :hl_group "DiagnosticUnderlineOk" opts))))))
 
-(defn handle-closing
+(def apply-suggestion
+  (comp apply-suggestion* first))
+
+(defn handle-closing*
   [id]
   (when-let [window (:window @state)]
-    (condp = (parse-long id)
+    (condp = id
       (:source window)
       (do (setval [ATOM :window] NONE state)
           ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
@@ -330,6 +349,9 @@
       (do (setval [ATOM :window] NONE state)
           nil)
       nil)))
+
+(def handle-closing
+  (comp handle-closing* parse-long))
 
 (defn handle*
   [payload]
@@ -386,8 +408,13 @@
         #(js->clj % :keywordize-keys true)
         first))
 
-(defn style
-  [index])
+(defn style*
+  [index]
+  (setval [ATOM :index] (dec index) state)
+  nil)
+
+(def style
+  (comp style* first))
 
 (defn suggest
   []
@@ -439,6 +466,7 @@
   (.registerAutocmd plugin "WinClosed" handle-closing (clj->js {:eval "expand('<amatch>')"
                                                                 :pattern "*"
                                                                 :sync true}))
+  (.registerFunction plugin "Apply" apply-suggestion (clj->js {:sync true}))
   (.registerFunction plugin "HandleResult" handle-result (clj->js {:sync true}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
   (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
