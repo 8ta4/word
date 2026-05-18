@@ -39,9 +39,6 @@
                 (promesa/recur (cons (js->clj previous-sentence) sentences)))))))
       [])))
 
-(defn style
-  [index])
-
 (defn prepend
   [sentences]
   (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
@@ -279,6 +276,26 @@
     ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
 
+(defn handle-closing
+  [id]
+  (when-let [window (:window @state)]
+    (condp = (parse-long id)
+      (:source window)
+      (do (setval [ATOM :window] NONE state)
+          ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
+          ;; E855: Autocommands caused command to abort
+          (promesa/let [windows (.-windows (:nvim @state))]
+            (if (->> windows
+                     js->clj
+                     count
+                     (= 2))
+              (.quit (:nvim @state))
+              (request "nvim_win_close" (:hud window) true))))
+      (:hud window)
+      (do (setval [ATOM :window] NONE state)
+          nil)
+      nil)))
+
 (defn handle*
   [payload]
   (promesa/let [pending-range-extmark (request "nvim_buf_get_extmark_by_id"
@@ -334,6 +351,9 @@
         #(js->clj % :keywordize-keys true)
         first))
 
+(defn style
+  [index])
+
 (defn suggest
   []
   (promesa/let [outside-hud (outside-hud?)]
@@ -361,26 +381,6 @@
                                  (.callFunction (:nvim @state) "HandleResult"))))
                         contexts
                         extmarks))))))))
-
-(defn handle-closing
-  [id]
-  (when-let [window (:window @state)]
-    (condp = (parse-long id)
-      (:source window)
-      (do (setval [ATOM :window] NONE state)
-          ;; If only two windows remain attempting to close the HUD window during the 'WinClosed' autocommand of the source window triggers:
-          ;; E855: Autocommands caused command to abort
-          (promesa/let [windows (.-windows (:nvim @state))]
-            (if (->> windows
-                     js->clj
-                     count
-                     (= 2))
-              (.quit (:nvim @state))
-              (request "nvim_win_close" (:hud window) true))))
-      (:hud window)
-      (do (setval [ATOM :window] NONE state)
-          nil)
-      nil)))
 
 (defn main
   [plugin]
