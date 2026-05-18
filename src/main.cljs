@@ -1,5 +1,6 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
+            [cljs.math :refer [ceil]]
             [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
@@ -233,6 +234,13 @@
            id
            {:details true}))
 
+(defn calculate-height
+  [lines width]
+  (apply + (map (comp ceil
+                      #(/ % width)
+                      count)
+                lines)))
+
 (defn render-hud
   []
   ;; We guard against nil (:nvim @state) because Neovim may trigger autocommands during startup.
@@ -242,10 +250,22 @@
       (promesa/let [extmarks (get-extmarks)]
         (if (empty? extmarks)
           (close-hud)
-          (promesa/let [hud-buffer (:buffer @state)
+          (promesa/let [extmark (get-sentence-extmark (ffirst extmarks))
+                        hud-buffer (:buffer @state)
                         source-buffer (.-buffer (:nvim @state))
-                        extmark (get-sentence-extmark (ffirst extmarks))
-                        source-window (.-window (:nvim @state))]
+                        lines (-> @state
+                                  :cache
+                                  ((-> source-buffer
+                                       .-id
+                                       str
+                                       keyword))
+                                  ((-> extmarks
+                                       ffirst
+                                       str
+                                       keyword))
+                                  format-lines)
+                        source-window (.-window (:nvim @state))
+                        width (.-width source-window)]
             (request "nvim_buf_set_extmark"
                      0
                      (:active-sentence (:namespace @state))
@@ -255,32 +275,27 @@
                              :id 1}
                             (select-keys (last extmark) #{:end_row :end_col})))
             (.setLines hud-buffer
-                       (-> @state
-                           :cache
-                           ((-> source-buffer
-                                .-id
-                                str
-                                keyword))
-                           ((-> extmarks
-                                ffirst
-                                str
-                                keyword))
-                           format-lines
-                           clj->js)
+                       (clj->js lines)
                        (clj->js {:start 0
                                  :end -1}))
-            (when-not (and (:window @state)
-                           (->> @state
-                                :window
-                                :source
-                                (= (.-id source-window))))
-              (close-hud)
-              (promesa/let [hud-window (.openWindow (:nvim @state) (:buffer @state) false (clj->js {:split "below"
-                                                                                                    :style "minimal"}))]
-                (setval [ATOM :window]
-                        {:source (.-id source-window)
-                         :hud (.-id hud-window)}
-                        state)))))))
+            (if (and (:window @state)
+                     (->> @state
+                          :window
+                          :source
+                          (= (.-id source-window))))
+              (request "nvim_win_set_height" (:hud (:window @state)) (calculate-height lines width))
+              (promesa/do
+                (close-hud)
+                (promesa/let [hud-window (.openWindow (:nvim @state)
+                                                      (:buffer @state)
+                                                      false
+                                                      (clj->js {:height (calculate-height lines width)
+                                                                :split "below"
+                                                                :style "minimal"}))]
+                  (setval [ATOM :window]
+                          {:source (.-id source-window)
+                           :hud (.-id hud-window)}
+                          state))))))))
     ;; We return nil to ensure the promise resolves to a value that can be safely serialized via RPC.
     ;; In synchronous autocommands, if the promise resolves to a structure containing non-serializable objects, the Neovim Node client throws "Error: Unrecognized object".
     nil))
