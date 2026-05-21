@@ -66,7 +66,7 @@
    		styles = {
    			{
    				name = "casual",
-   				prompt = "Check if the sentence is grammatically correct. Explain any errors. Keep the formatting. Give two casual rewrites.",
+   				prompt = "Check if the sentence is grammatically correct. Explain any errors. Give two casual rewrites.",
    			},
    		},
    	},
@@ -125,7 +125,7 @@ Yes.
 1. Add the number keybindings and the second style to your `lazy.nvim` configuration:
 
    ```lua
-   local base = "Check if the sentence is grammatically correct. Explain any errors. Keep the formatting. "
+   local base = "Check if the sentence is grammatically correct. Explain any errors. "
 
    {
    	"8ta4/word",
