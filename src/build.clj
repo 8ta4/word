@@ -13,6 +13,7 @@
 (defn build
   {:shadow.build/stage :flush}
   [state]
+  (println "Configuring plugin.")
   (configure-plugin)
   (println "Updating Neovim remote plugins.")
   (sh "nvim" "--headless" "+Lazy load word" "+UpdateRemotePlugins" "+qa!")
