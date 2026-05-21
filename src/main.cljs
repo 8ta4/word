@@ -117,12 +117,12 @@
 (defn get-contexts
   [sentences]
   (promesa/let [sentences* (prepend sentences)
-                sentences* (append sentences*)
-                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences*)
-                                                                 :end (inc (first (last sentences*)))}))]
+                sentences** (append sentences*)
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences**)
+                                                                 :end (inc (first (last sentences**)))}))]
     (get-contexts* (map (fn [[row start-col end-col]]
-                          (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
-                        sentences*))))
+                          (subs (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
+                        sentences**))))
 
 (defn get-styles
   []
