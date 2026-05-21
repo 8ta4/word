@@ -1,7 +1,7 @@
 (ns build
-  (:require [clojure.java.shell :refer [sh]]
-            [clojure.string :as string]
-            [babashka.fs :refer [expand-home file]]))
+  (:require [babashka.fs :refer [expand-home file]]
+            [clojure.java.shell :refer [sh]]
+            [clojure.string :as string]))
 
 (defn configure-plugin
   []
