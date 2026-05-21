@@ -452,8 +452,8 @@
                             (->> response
                                  parse-response
                                  (merge context
-                                        {:extmark extmark
-                                         :buffer (.-id buffer)})
+                                        {:buffer (.-id buffer)
+                                         :extmark extmark})
                                  clj->js
                                  (.callFunction (:nvim @state) "HandleResult"))))
                         contexts
