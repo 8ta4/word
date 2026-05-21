@@ -370,6 +370,7 @@
                      (= 2))
               (if modified
                 (promesa/do
+                  (.errWriteLine (:nvim @state) "E37: No write since last change (add ! and quit again to override)")
                   (.command (:nvim @state) (str "sb " (.-id buffer)))
                   (request "nvim_win_close" (:hud window) true))
                 (.quit (:nvim @state)))
