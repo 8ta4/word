@@ -109,8 +109,7 @@
             sentences)))
 
 (def get-contexts*
-  (comp (partial map (comp str
-                           (partial setval* [MAP-VALS (pred= "")] NONE)
+  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
                            (partial zipmap [:previous-sentence :target-sentence :next-sentence])))
         (partial partition 3 1)))
 
@@ -404,7 +403,7 @@
                      str
                      keyword)
                  (keyword (str resolved-sentence-extmark))]
-                (select-keys payload #{:explanation :pass :suggestions})
+                (select-keys payload #{:explanation :pass :suggestions :target-sentence})
                 state)
         (request "nvim_buf_set_extmark"
                  (:buffer payload)
@@ -447,12 +446,13 @@
                                                                            (clj->js {:messages [{:role "system"
                                                                                                  :content prompt}
                                                                                                 {:role "user"
-                                                                                                 :content context}]
+                                                                                                 :content (str context)}]
                                                                                      :model model
                                                                                      :response_format response-format}))]
                             (->> response
                                  parse-response
-                                 (merge {:extmark extmark
+                                 (merge context
+                                        {:extmark extmark
                                          :buffer (.-id buffer)})
                                  clj->js
                                  (.callFunction (:nvim @state) "HandleResult"))))
