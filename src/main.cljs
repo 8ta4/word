@@ -109,20 +109,19 @@
             sentences)))
 
 (def get-contexts*
-  (comp (partial map (comp str
-                           (partial setval* [MAP-VALS (pred= "")] NONE)
+  (comp (partial map (comp (partial setval* [MAP-VALS (pred= "")] NONE)
                            (partial zipmap [:previous-sentence :target-sentence :next-sentence])))
         (partial partition 3 1)))
 
 (defn get-contexts
   [sentences]
   (promesa/let [sentences* (prepend sentences)
-                sentences* (append sentences*)
-                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences*)
-                                                                 :end (inc (first (last sentences*)))}))]
+                sentences** (append sentences*)
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences**)
+                                                                 :end (inc (first (last sentences**)))}))]
     (get-contexts* (map (fn [[row start-col end-col]]
-                          (subs (nth (js->clj lines) (- row (ffirst sentences*))) start-col end-col))
-                        sentences*))))
+                          (subs (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
+                        sentences**))))
 
 (defn get-styles
   []
@@ -404,7 +403,7 @@
                      str
                      keyword)
                  (keyword (str resolved-sentence-extmark))]
-                (select-keys payload #{:explanation :suggestions})
+                (select-keys payload #{:explanation :pass :suggestions :target-sentence})
                 state)
         (request "nvim_buf_set_extmark"
                  (:buffer payload)
@@ -447,13 +446,14 @@
                                                                            (clj->js {:messages [{:role "system"
                                                                                                  :content prompt}
                                                                                                 {:role "user"
-                                                                                                 :content context}]
+                                                                                                 :content (str context)}]
                                                                                      :model model
                                                                                      :response_format response-format}))]
                             (->> response
                                  parse-response
-                                 (merge {:extmark extmark
-                                         :buffer (.-id buffer)})
+                                 (merge context
+                                        {:buffer (.-id buffer)
+                                         :extmark extmark})
                                  clj->js
                                  (.callFunction (:nvim @state) "HandleResult"))))
                         contexts
