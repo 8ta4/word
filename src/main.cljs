@@ -1,7 +1,7 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
             [cljs.math :refer [ceil]]
-            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM FIRST LAST MAP-VALS NONE nthpath pred= setval setval* transform]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -15,14 +15,32 @@
   (.then (.callFunction (:nvim @state) fname (clj->js args))
          #(js->clj % :keywordize-keys true)))
 
+(defn decode
+  [s]
+  (.toString (js/Buffer.from s) "latin1"))
+
 (defn get-selection-bounds
   []
-  (promesa/let [positions (all (map (partial call-function "getpos") ["." "v"]))]
-    (sort (map (comp vec
-                     (partial map dec)
-                     drop-last
-                     rest)
-               positions))))
+  (promesa/let [mode (.-mode (:nvim @state))
+                positions (all (map (partial call-function "getpos") ["." "v"]))
+                bounds (sort (map (comp vec
+                                        (partial map dec)
+                                        drop-last
+                                        rest)
+                                  positions))
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (first (last bounds))
+                                                                 :end (-> bounds
+                                                                          last
+                                                                          first
+                                                                          inc)}))]
+    (if (= "V" (:mode (js->clj mode :keywordize-keys true)))
+      (setval [LAST LAST]
+              (-> lines
+                  first
+                  decode
+                  count)
+              (setval [FIRST LAST] 0 bounds))
+      bounds)))
 
 (defn get-sentences
   []
