@@ -1,7 +1,7 @@
 (ns main
   (:require [cljs-node-io.core :refer [slurp]]
             [cljs.math :refer [ceil]]
-            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM MAP-VALS NONE nthpath pred= setval setval* transform]]
+            [com.rpl.specter :refer [AFTER-ELEM ALL ATOM FIRST LAST MAP-VALS NONE nthpath pred= setval setval* transform]]
             [groq-sdk :refer [Groq]]
             [os :refer [homedir]]
             [path :refer [join]]
@@ -10,41 +10,65 @@
 (defonce state
   (atom {}))
 
+(defn call-function
+  [fname args]
+  (.then (.callFunction (:nvim @state) fname (clj->js args))
+         #(js->clj % :keywordize-keys true)))
+
+(defn decode
+  [s]
+  ;; This ensures that string length matches the UTF-8 byte count because Neovim uses byte-indexed positions.
+  (.toString (js/Buffer.from s) "latin1"))
+
 (defn get-selection-bounds
   []
-  (promesa/let [positions (all (map #(.callFunction (:nvim @state) "getpos" %) ["." "v"]))]
-    (sort (map (comp vec
-                     (partial map dec)
-                     drop-last
-                     rest
-                     js->clj)
-               positions))))
+  ;; https://github.com/neovim/neovim/issues/14451
+  (promesa/let [mode (call-function "mode" [])
+                positions (all (map (partial call-function "getpos") ["." "v"]))
+                bounds (sort (map (comp vec
+                                        (partial map dec)
+                                        drop-last
+                                        rest)
+                                  positions))
+                lines (.buffer.getLines (:nvim @state) (clj->js {:start (first (last bounds))
+                                                                 :end (-> bounds
+                                                                          last
+                                                                          first
+                                                                          inc)}))]
+    (if (= "V" mode)
+      (setval [LAST LAST]
+              (-> lines
+                  first
+                  decode
+                  count)
+              (setval [FIRST LAST] 0 bounds))
+      bounds)))
 
 (defn get-sentences
   []
   (promesa/let [[start-pos end-pos] (get-selection-bounds)
-                start-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos start-pos}))]
-    (if (js->clj start-sentence)
-      (promesa/let [end-sentence* (.callFunction (:nvim @state) "Get" (clj->js {:pos end-pos}))
-                    end-sentence (if (js->clj end-sentence*)
-                                   (js->clj end-sentence*)
-                                   (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
-                                                                                 :pos end-pos})))]
-        (if (= (js->clj start-sentence) (js->clj end-sentence))
-          [(js->clj start-sentence)]
-          (promesa/loop [sentences [(js->clj end-sentence)]]
-            (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
-                                                                                          :pos (drop-last (first sentences))}))]
-              (if (= (js->clj start-sentence) (js->clj previous-sentence))
-                (cons (js->clj start-sentence) sentences)
-                (promesa/recur (cons (js->clj previous-sentence) sentences)))))))
+                start-sentence (call-function "Get" {:pos start-pos})]
+    (if start-sentence
+      (promesa/let [end-sentence (call-function "Get" {:pos end-pos})
+                    end-sentence* (if end-sentence
+                                    end-sentence
+                                    (call-function "Get" {:offset -1
+                                                          :pos end-pos}))]
+        (if (= start-sentence end-sentence*)
+          [start-sentence]
+          (promesa/loop [sentences [end-sentence*]]
+            (promesa/let [previous-sentence (call-function "Get" {:offset -1
+                                                                  :pos (drop-last (first sentences))})]
+              (if (= start-sentence previous-sentence)
+                (cons start-sentence sentences)
+                (promesa/recur (cons previous-sentence sentences)))))))
       [])))
 
 (defn prepend
   [sentences]
-  (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
-                                                                                :pos (drop-last (first sentences))}))]
-    (cons (or (js->clj previous-sentence) [0 0 0]) sentences)))
+  (promesa/let [previous-sentence (call-function "Get" {:offset -1
+                                                        :pos (drop-last (first sentences))})]
+    (cons (or previous-sentence [0 0 0]) sentences)))
 
 (defn request
   [function & args]
@@ -53,17 +77,17 @@
 
 (defn get-overlapping-extmarks
   [buf ns-id start end]
-  (promesa/let [grault (request "nvim_buf_get_extmarks"
-                                buf
-                                ns-id
-                                start
-                                end
-                                {:details true
-                                 :overlap true})]
+  (promesa/let [extmarks (request "nvim_buf_get_extmarks"
+                                  buf
+                                  ns-id
+                                  start
+                                  end
+                                  {:details true
+                                   :overlap true})]
     (remove (fn [[_ row col details]]
               (or (= start ((juxt :end_row :end_col) details))
                   (= end [row col])))
-            grault)))
+            extmarks)))
 
 (defn refresh-range
   [[start end]]
@@ -112,12 +136,12 @@
 
 (defn append
   [sentences]
-  (promesa/let [next-sentence (.callFunction (:nvim @state)
-                                             "Get"
-                                             (clj->js {:offset 1
-                                                       :pos [(first (last sentences)) (llast sentences)]}))]
+  (promesa/let [next-sentence (call-function
+                               "Get"
+                               {:offset 1
+                                :pos [(first (last sentences)) (llast sentences)]})]
     (setval AFTER-ELEM
-            (or (js->clj next-sentence) [(first (last sentences)) (llast sentences) (llast sentences)])
+            (or next-sentence [(first (last sentences)) (llast sentences) (llast sentences)])
             sentences)))
 
 (def get-contexts*
@@ -130,7 +154,10 @@
   (promesa/let [sentences* (prepend sentences)
                 sentences** (append sentences*)
                 lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences**)
-                                                                 :end (inc (first (last sentences**)))}))]
+                                                                 :end (-> sentences**
+                                                                          last
+                                                                          first
+                                                                          inc)}))]
     (get-contexts* (map (fn [[row start-col end-col]]
                           (subs (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
                         sentences**))))
@@ -485,8 +512,7 @@
                                  (merge context
                                         {:buffer (.-id buffer)
                                          :extmark extmark})
-                                 clj->js
-                                 (.callFunction (:nvim @state) "HandleResult"))))
+                                 (call-function "HandleResult"))))
                         contexts
                         extmarks))))))))
 
@@ -505,8 +531,8 @@
   ;; We guard against nil (:nvim @state) because Neovim may trigger autocommands during startup.
   ;; Without this check, invoking methods like (.callFunction ...) on a null object throws a TypeError.
   (when (:nvim @state)
-    (promesa/let [first-line (.callFunction (:nvim @state) "line" (clj->js ["w0"]))
-                  last-line (.callFunction (:nvim @state) "line" (clj->js ["w$"]))
+    (promesa/let [first-line (call-function "line" ["w0"])
+                  last-line (call-function "line" ["w$"])
                   extmarks (request "nvim_buf_get_extmarks"
                                     0
                                     (:resolved-sentence (:namespace @state))
