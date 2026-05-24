@@ -25,14 +25,14 @@
   (promesa/let [[start-pos end-pos] (get-selection-bounds)
                 start-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos start-pos}))]
     (if (js->clj start-sentence)
-      (promesa/let [end-sentence* (.callFunction (:nvim @state) "Get" (clj->js {:pos end-pos}))
-                    end-sentence (if (js->clj end-sentence*)
-                                   (js->clj end-sentence*)
-                                   (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
-                                                                                 :pos end-pos})))]
-        (if (= (js->clj start-sentence) (js->clj end-sentence))
+      (promesa/let [end-sentence (.callFunction (:nvim @state) "Get" (clj->js {:pos end-pos}))
+                    end-sentence* (if (js->clj end-sentence)
+                                    (js->clj end-sentence)
+                                    (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
+                                                                                  :pos end-pos})))]
+        (if (= (js->clj start-sentence) (js->clj end-sentence*))
           [(js->clj start-sentence)]
-          (promesa/loop [sentences [(js->clj end-sentence)]]
+          (promesa/loop [sentences [(js->clj end-sentence*)]]
             (promesa/let [previous-sentence (.callFunction (:nvim @state) "Get" (clj->js {:offset -1
                                                                                           :pos (drop-last (first sentences))}))]
               (if (= (js->clj start-sentence) (js->clj previous-sentence))
