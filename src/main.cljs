@@ -57,17 +57,17 @@
 
 (defn get-overlapping-extmarks
   [buf ns-id start end]
-  (promesa/let [grault (request "nvim_buf_get_extmarks"
-                                buf
-                                ns-id
-                                start
-                                end
-                                {:details true
-                                 :overlap true})]
+  (promesa/let [extmarks (request "nvim_buf_get_extmarks"
+                                  buf
+                                  ns-id
+                                  start
+                                  end
+                                  {:details true
+                                   :overlap true})]
     (remove (fn [[_ row col details]]
               (or (= start ((juxt :end_row :end_col) details))
                   (= end [row col])))
-            grault)))
+            extmarks)))
 
 (defn refresh-range
   [[start end]]
