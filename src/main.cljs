@@ -22,7 +22,7 @@
 
 (defn get-selection-bounds
   []
-  (promesa/let [mode (.-mode (:nvim @state))
+  (promesa/let [mode (call-function "mode" [])
                 positions (all (map (partial call-function "getpos") ["." "v"]))
                 bounds (sort (map (comp vec
                                         (partial map dec)
@@ -34,7 +34,7 @@
                                                                           last
                                                                           first
                                                                           inc)}))]
-    (if (= "V" (:mode (js->clj mode :keywordize-keys true)))
+    (if (= "V" mode)
       (setval [LAST LAST]
               (-> lines
                   first
