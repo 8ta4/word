@@ -134,7 +134,10 @@
   (promesa/let [sentences* (prepend sentences)
                 sentences** (append sentences*)
                 lines (.buffer.getLines (:nvim @state) (clj->js {:start (ffirst sentences**)
-                                                                 :end (inc (first (last sentences**)))}))]
+                                                                 :end (-> sentences**
+                                                                          last
+                                                                          first
+                                                                          inc)}))]
     (get-contexts* (map (fn [[row start-col end-col]]
                           (subs (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
                         sentences**))))
