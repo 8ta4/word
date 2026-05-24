@@ -22,6 +22,7 @@
 
 (defn get-selection-bounds
   []
+  ;; https://github.com/neovim/neovim/issues/14451
   (promesa/let [mode (call-function "mode" [])
                 positions (all (map (partial call-function "getpos") ["." "v"]))
                 bounds (sort (map (comp vec
