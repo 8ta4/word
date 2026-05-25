@@ -149,6 +149,17 @@
                            (partial zipmap [:previous-sentence :target-sentence :next-sentence])))
         (partial partition 3 1)))
 
+(defn encode
+  [s]
+  (.toString (js/Buffer.from s "latin1")))
+
+(defn slice
+  [s start end]
+  (-> s
+      decode
+      (subs start end)
+      encode))
+
 (defn get-contexts
   [sentences]
   (promesa/let [sentences* (prepend sentences)
@@ -159,7 +170,7 @@
                                                                           first
                                                                           inc)}))]
     (get-contexts* (map (fn [[row start-col end-col]]
-                          (subs (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
+                          (slice (nth (js->clj lines) (- row (ffirst sentences**))) start-col end-col))
                         sentences**))))
 
 (defn get-styles
@@ -541,7 +552,7 @@
                              col
                              (merge (select-keys details #{:end_col :end_row})
                                     {:hl_group (if (= row (:end_row details))
-                                                 (let [current-text (subs (nth (js->clj lines) (- row (dec first-line))) col (:end_col details))
+                                                 (let [current-text (slice (nth (js->clj lines) (- row (dec first-line))) col (:end_col details))
                                                        cache-entry (->> @state
                                                                         :cache
                                                                         ((-> buffer
@@ -594,4 +605,4 @@
   (.registerFunction plugin "Apply" apply-suggestion (clj->js {:sync true}))
   (.registerFunction plugin "HandleResult" handle-result (clj->js {:sync true}))
   (.registerFunction plugin "Style" style (clj->js {:sync true}))
-  (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})))
+  (.registerFunction plugin "Suggest" suggest (clj->js {:sync true})) ())
