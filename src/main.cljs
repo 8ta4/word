@@ -376,7 +376,10 @@
                                         keyword))
                                    :suggestions
                                    (nth (dec index)))
-                    opts {:end_col (+ (second extmark) (count suggestion))
+                    opts {:end_col (->> suggestion
+                                        decode
+                                        count
+                                        (+ (second extmark)))
                           :end_row (first extmark)
                           :id (ffirst extmarks)}]
         (request "nvim_buf_set_text"
