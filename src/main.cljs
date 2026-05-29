@@ -592,6 +592,9 @@
                                :resolved-sentence resolved-sentence-namespace
                                :active-sentence active-sentence-namespace}
                    :nvim (.-nvim plugin)}))
+  ;; We register a dummy BufEnter autocommand to ensure Neovim fires an event upon entering a buffer.
+  ;; This ticks the Node.js event loop, allowing the asynchronous initialization promise to resolve.
+  ;; Without this BufEnter registration, calling "Suggest" immediately would fail with a TypeError because the event loop has not ticked to initialize @state if the cursor is on the first line on startup
   (.registerAutocmd plugin "BufEnter" (fn []) (clj->js {:pattern "*"}))
   (.registerAutocmd plugin "CursorMoved" render-hud (clj->js {:pattern "*"
                                                               :sync true}))
