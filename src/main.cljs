@@ -513,7 +513,9 @@
                                                                                           (clj->js {:messages [{:role "system"
                                                                                                                 :content prompt}
                                                                                                                {:role "user"
-                                                                                                                :content (str context)}]
+                                                                                                                ;; We use `JSON.stringify` instead of `str` because `(str context)` produces a Clojure EDN string.
+                                                                                                                ;; The LLM sometimes mimics this format in its output, returning suggestion text formatted as EDN strings instead of plain text.
+                                                                                                                :content (js/JSON.stringify context)}]
                                                                                                     :model model
                                                                                                     :response_format response-format
                                                                                                     ;; We set reasoning_effort to "high" because links inside sentences tend to get stripped away otherwise.
