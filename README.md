@@ -4,7 +4,7 @@
 
 > What's `word`?
 
-`word` is a Neovim plugin that generates sentence-by-sentence rewrites.
+`word` is a Neovim plugin that rewrites sentences one by one.
 
 ![](https://raw.githubusercontent.com/8ta4/word-media/2e1a7463c4c4f237633407297dfbf1a064302d12/demo.gif)
 
