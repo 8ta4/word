@@ -137,10 +137,8 @@
 
 (defn append
   [sentences]
-  (promesa/let [next-sentence (call-function
-                               "Get"
-                               {:offset 1
-                                :pos [(first (last sentences)) (llast sentences)]})]
+  (promesa/let [next-sentence (call-function "Get"
+                                             {:pos [(first (last sentences)) (llast sentences)]})]
     (setval AFTER-ELEM
             (or next-sentence [(first (last sentences)) (llast sentences) (llast sentences)])
             sentences)))
